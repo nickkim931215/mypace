@@ -1,0 +1,158 @@
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────────────
+   MyPace — Premium Fitness Design System
+   ────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: "Pretendard Variable";
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+  src: url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/PretendardVariable.woff2")
+    format("woff2-variations");
+}
+
+:root {
+  /* Surfaces */
+  --background: #0a0a0b;
+  --surface-1: #16161a;
+  --surface-2: #1f1f25;
+  --surface-3: #2a2a32;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
+
+  /* Text */
+  --foreground: #fafafa;
+  --foreground-muted: #9ca3af;
+  --foreground-dim: #6b7280;
+
+  /* Brand */
+  --accent: #d4ff3f;
+  --accent-glow: rgba(212, 255, 63, 0.35);
+  --work: #ff6b35;
+  --rest: #3b82f6;
+  --danger: #ef4444;
+  --success: #22c55e;
+
+  /* Motion */
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-color-scheme: light) {
+  :root.system {
+    --background: #fafaf7;
+    --surface-1: #ffffff;
+    --surface-2: #f4f4f0;
+    --surface-3: #e8e8e2;
+    --border-subtle: rgba(0, 0, 0, 0.06);
+    --border-strong: rgba(0, 0, 0, 0.12);
+    --foreground: #0a0a0b;
+    --foreground-muted: #52525b;
+    --foreground-dim: #71717a;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-dim: var(--foreground-dim);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-work: var(--work);
+  --color-rest: var(--rest);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+
+  --font-sans: "Pretendard Variable", var(--font-inter), ui-sans-serif,
+    system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-inter), "Pretendard Variable", ui-sans-serif,
+    system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular,
+    Menlo, monospace;
+
+  --radius-card: 24px;
+  --radius-pill: 9999px;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  overscroll-behavior-y: none;
+}
+
+body {
+  font-feature-settings: "ss01", "cv01", "cv11";
+}
+
+/* Tabular numbers for timer display */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Subtle inner glow utility for premium cards */
+.card-premium {
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+  position: relative;
+  isolation: isolate;
+}
+.card-premium::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Accent glow halo */
+.glow-accent {
+  box-shadow:
+    0 0 0 1px rgba(212, 255, 63, 0.25),
+    0 10px 40px -10px var(--accent-glow);
+}
+
+/* Hide scrollbar but allow scrolling */
+.scroll-hide::-webkit-scrollbar {
+  display: none;
+}
+.scroll-hide {
+  scrollbar-width: none;
+}
+
+/* Reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
