@@ -25,7 +25,8 @@ const defaultRoutine = (): Routine => {
     { id: uid(), name: "휴식", type: "rest", durationSec: 20 },
     { id: uid(), name: "버피", type: "work", durationSec: 40, bpm: 130 },
   ];
-  const now = Date.now();
+  // Seed routine uses updatedAt: 0 so a fresh install never wins
+  // against existing cloud data on first sign-in.
   return {
     id: uid(),
     name: "하루 10분 코어",
@@ -33,8 +34,8 @@ const defaultRoutine = (): Routine => {
     rounds,
     repeat: 1,
     totalDurationSec: sumDuration(rounds),
-    createdAt: now,
-    updatedAt: now,
+    createdAt: Date.now(),
+    updatedAt: 0,
     tags: ["core", "10min"],
   };
 };

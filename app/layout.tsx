@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
+import { SyncBridge } from "@/components/sync-bridge";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -46,7 +48,10 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        {children}
+        <AuthProvider>
+          <SyncBridge />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

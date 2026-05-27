@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
+import { UserMenu } from "@/components/user-menu";
 
 const NAV = [
   { href: "/timer", label: "타이머" },
@@ -35,6 +36,7 @@ export function SiteHeader() {
               시작하기
             </Button>
           </Link>
+          <UserMenu />
         </div>
       </div>
     </header>

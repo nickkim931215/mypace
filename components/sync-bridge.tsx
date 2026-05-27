@@ -1,0 +1,133 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { useAuth } from "@/lib/auth-context";
+import { useTimerStore } from "@/store/timer-store";
+import { useSyncStore } from "@/store/sync-store";
+import {
+  maxUpdatedAt,
+  pushUserDoc,
+  subscribeUserDoc,
+  type CloudSnapshot,
+} from "@/lib/sync";
+
+const PUSH_DEBOUNCE_MS = 700;
+
+export function SyncBridge() {
+  const { user, configured } = useAuth();
+  const applyingRemoteRef = useRef(false);
+  const lastPushedAtRef = useRef(0);
+  const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (!configured) return;
+    if (!user) {
+      useSyncStore.getState().setStatus("idle");
+      return;
+    }
+
+    const uid = user.uid;
+    useSyncStore.getState().setStatus("loading");
+    initialAppliedRef.current = false;
+
+    function buildSnapshot(): CloudSnapshot {
+      const s = useTimerStore.getState();
+      const localMax = maxUpdatedAt(s.routines);
+      return {
+        routines: s.routines,
+        currentRoutineId: s.currentRoutineId,
+        updatedAt: Math.max(localMax, Date.now()),
+      };
+    }
+
+    function schedulePush() {
+      if (applyingRemoteRef.current) return;
+      if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
+      useSyncStore.getState().setStatus("syncing");
+      pushTimerRef.current = setTimeout(async () => {
+        const snap = buildSnapshot();
+        try {
+          await pushUserDoc(uid, snap);
+          lastPushedAtRef.current = snap.updatedAt;
+          useSyncStore.getState().markSynced();
+        } catch (err) {
+          console.error("[sync] push failed:", err);
+          useSyncStore
+            .getState()
+            .setStatus("error", "동기화에 실패했습니다.");
+        }
+      }, PUSH_DEBOUNCE_MS);
+    }
+
+    const unsubRemote = subscribeUserDoc(
+      uid,
+      (cloud) => {
+        if (!cloud) {
+          // First sign-in on this account — push local as the seed.
+          initialAppliedRef.current = true;
+          schedulePush();
+          return;
+        }
+
+        // Ignore the echo of our own write.
+        if (cloud.updatedAt === lastPushedAtRef.current) {
+          useSyncStore.getState().markSynced();
+          return;
+        }
+
+        const local = useTimerStore.getState();
+        const localMax = maxUpdatedAt(local.routines);
+
+        const shouldApplyRemote =
+          !initialAppliedRef.current
+            ? cloud.updatedAt >= localMax
+            : cloud.updatedAt > localMax;
+
+        if (shouldApplyRemote && cloud.routines.length > 0) {
+          applyingRemoteRef.current = true;
+          useTimerStore.setState({
+            routines: cloud.routines,
+            currentRoutineId:
+              cloud.currentRoutineId ?? cloud.routines[0]?.id ?? null,
+          });
+          // Release on next tick so the subscriber sees consistent state.
+          queueMicrotask(() => {
+            applyingRemoteRef.current = false;
+          });
+          lastPushedAtRef.current = cloud.updatedAt;
+          useSyncStore.getState().markSynced();
+        } else if (!initialAppliedRef.current) {
+          // Local is newer — push it up.
+          schedulePush();
+        }
+        initialAppliedRef.current = true;
+      },
+      () => {
+        useSyncStore
+          .getState()
+          .setStatus("error", "Firestore에 연결할 수 없습니다.");
+      },
+    );
+
+    const unsubLocal = useTimerStore.subscribe((state, prev) => {
+      if (applyingRemoteRef.current) return;
+      if (
+        state.routines === prev.routines &&
+        state.currentRoutineId === prev.currentRoutineId
+      ) {
+        return;
+      }
+      schedulePush();
+    });
+
+    return () => {
+      unsubRemote();
+      unsubLocal();
+      if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
+      useSyncStore.getState().setStatus("idle");
+    };
+  }, [user, configured]);
+
+  return null;
+}
