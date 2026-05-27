@@ -10,8 +10,10 @@ import {
 } from "react";
 import {
   GoogleAuthProvider,
+  getRedirectResult,
   onAuthStateChanged,
   signInWithPopup,
+  signInWithRedirect,
   signOut as fbSignOut,
   type User,
 } from "firebase/auth";
@@ -44,6 +46,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!configured) return;
     const auth = getFirebaseAuth();
+    getRedirectResult(auth).catch((err) => {
+      console.error("[auth] redirect result failed:", err);
+      setError("로그인에 실패했습니다. 다시 시도해주세요.");
+    });
     const unsub = onAuthStateChanged(auth, (user) => {
       setState(user ? { status: "signedIn", user } : { status: "signedOut" });
     });
@@ -56,13 +62,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setError(null);
+    const auth = getFirebaseAuth();
+    const provider = new GoogleAuthProvider();
+
+    // Popup is the primary path. Redirect is the fallback only when the
+    // browser truly blocks the popup — in some embedded previews redirect
+    // loses the session on the way back due to partitioned iframe storage,
+    // so we'd rather try popup first.
     try {
-      const auth = getFirebaseAuth();
-      const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
+      return;
     } catch (err) {
       const code = (err as { code?: string })?.code;
       if (code === "auth/popup-closed-by-user") return;
+      if (
+        code === "auth/popup-blocked" ||
+        code === "auth/cancelled-popup-request" ||
+        code === "auth/operation-not-supported-in-this-environment"
+      ) {
+        try {
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (e) {
+          console.error("[auth] fallback redirect failed:", e);
+        }
+      }
       setError(
         code === "auth/network-request-failed"
           ? "네트워크 오류가 발생했습니다."

@@ -1,0 +1,229 @@
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  increment,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  runTransaction,
+  serverTimestamp,
+  setDoc,
+  type DocumentData,
+  type QueryDocumentSnapshot,
+  type Unsubscribe,
+} from "firebase/firestore";
+import { getDb } from "@/firebase/config";
+import type { CommunityPost, PostComment, Routine } from "@/lib/types";
+
+const POSTS = "posts";
+
+function postsCol() {
+  return collection(getDb(), POSTS);
+}
+
+function postDoc(id: string) {
+  return doc(getDb(), POSTS, id);
+}
+
+function commentsCol(postId: string) {
+  return collection(getDb(), POSTS, postId, "comments");
+}
+
+function likeDoc(postId: string, uid: string) {
+  return doc(getDb(), POSTS, postId, "likes", uid);
+}
+
+export function extractYoutubeId(url: string): string | null {
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  // Handles: youtu.be/<id>, youtube.com/watch?v=<id>, youtube.com/shorts/<id>,
+  // youtube.com/embed/<id>.
+  const patterns = [
+    /youtu\.be\/([A-Za-z0-9_-]{11})/,
+    /[?&]v=([A-Za-z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([A-Za-z0-9_-]{11})/,
+    /youtube\.com\/embed\/([A-Za-z0-9_-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = trimmed.match(p);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+export function youtubeThumbnail(id: string): string {
+  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+}
+
+function fromDoc(snap: QueryDocumentSnapshot<DocumentData>): CommunityPost {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    authorId: d.authorId,
+    authorName: d.authorName ?? "익명",
+    authorPhotoURL: d.authorPhotoURL ?? null,
+    title: d.title ?? "",
+    description: d.description ?? "",
+    youtubeUrl: d.youtubeUrl ?? null,
+    youtubeId: d.youtubeId ?? null,
+    routine: d.routine as Routine,
+    likeCount: typeof d.likeCount === "number" ? d.likeCount : 0,
+    commentCount: typeof d.commentCount === "number" ? d.commentCount : 0,
+    createdAt:
+      typeof d.createdAt === "number"
+        ? d.createdAt
+        : d.createdAt?.toMillis?.() ?? 0,
+  };
+}
+
+export function subscribePosts(
+  onChange: (posts: CommunityPost[]) => void,
+  onError?: (err: Error) => void,
+  pageSize = 30,
+): Unsubscribe {
+  const q = query(postsCol(), orderBy("createdAt", "desc"), limit(pageSize));
+  return onSnapshot(
+    q,
+    (s) => onChange(s.docs.map(fromDoc)),
+    (err) => {
+      console.error("[community] subscribePosts error:", err);
+      onError?.(err);
+    },
+  );
+}
+
+export async function getPost(id: string): Promise<CommunityPost | null> {
+  const s = await getDoc(postDoc(id));
+  if (!s.exists()) return null;
+  return fromDoc(s as QueryDocumentSnapshot<DocumentData>);
+}
+
+export interface CreatePostInput {
+  authorId: string;
+  authorName: string;
+  authorPhotoURL: string | null;
+  title: string;
+  description: string;
+  youtubeUrl: string | null;
+  routine: Routine;
+}
+
+export async function createPost(input: CreatePostInput): Promise<string> {
+  const youtubeId = input.youtubeUrl
+    ? extractYoutubeId(input.youtubeUrl)
+    : null;
+  const ref = await addDoc(postsCol(), {
+    authorId: input.authorId,
+    authorName: input.authorName,
+    authorPhotoURL: input.authorPhotoURL,
+    title: input.title.trim(),
+    description: input.description.trim(),
+    youtubeUrl: input.youtubeUrl,
+    youtubeId,
+    routine: input.routine,
+    likeCount: 0,
+    commentCount: 0,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function deletePost(id: string): Promise<void> {
+  await deleteDoc(postDoc(id));
+}
+
+// ── comments ──────────────────────────────────────────────────────────
+
+function commentFromDoc(
+  snap: QueryDocumentSnapshot<DocumentData>,
+): PostComment {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    authorId: d.authorId,
+    authorName: d.authorName ?? "익명",
+    authorPhotoURL: d.authorPhotoURL ?? null,
+    text: d.text ?? "",
+    createdAt:
+      typeof d.createdAt === "number"
+        ? d.createdAt
+        : d.createdAt?.toMillis?.() ?? 0,
+  };
+}
+
+export function subscribeComments(
+  postId: string,
+  onChange: (comments: PostComment[]) => void,
+  onError?: (err: Error) => void,
+): Unsubscribe {
+  const q = query(commentsCol(postId), orderBy("createdAt", "asc"));
+  return onSnapshot(
+    q,
+    (s) => onChange(s.docs.map(commentFromDoc)),
+    (err) => {
+      console.error("[community] subscribeComments error:", err);
+      onError?.(err);
+    },
+  );
+}
+
+export interface AddCommentInput {
+  postId: string;
+  authorId: string;
+  authorName: string;
+  authorPhotoURL: string | null;
+  text: string;
+}
+
+export async function addComment(input: AddCommentInput): Promise<void> {
+  const trimmed = input.text.trim();
+  if (!trimmed) return;
+  // Use a transaction so the post's commentCount stays consistent with
+  // the actual number of comments visible in the feed cards.
+  await runTransaction(getDb(), async (tx) => {
+    const ref = doc(commentsCol(input.postId));
+    tx.set(ref, {
+      authorId: input.authorId,
+      authorName: input.authorName,
+      authorPhotoURL: input.authorPhotoURL,
+      text: trimmed,
+      createdAt: serverTimestamp(),
+    });
+    tx.update(postDoc(input.postId), { commentCount: increment(1) });
+  });
+}
+
+// ── likes ─────────────────────────────────────────────────────────────
+
+export function subscribeMyLike(
+  postId: string,
+  uid: string,
+  onChange: (liked: boolean) => void,
+): Unsubscribe {
+  return onSnapshot(
+    likeDoc(postId, uid),
+    (s) => onChange(s.exists()),
+    (err) => console.error("[community] subscribeMyLike error:", err),
+  );
+}
+
+export async function toggleLike(postId: string, uid: string): Promise<void> {
+  await runTransaction(getDb(), async (tx) => {
+    const ref = likeDoc(postId, uid);
+    const snap = await tx.get(ref);
+    if (snap.exists()) {
+      tx.delete(ref);
+      tx.update(postDoc(postId), { likeCount: increment(-1) });
+    } else {
+      tx.set(ref, { createdAt: serverTimestamp() });
+      tx.update(postDoc(postId), { likeCount: increment(1) });
+    }
+  });
+}
+
+// Re-export so callers don't need to import setDoc directly when seeding.
+export { setDoc };

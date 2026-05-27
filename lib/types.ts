@@ -24,16 +24,26 @@ export interface Routine {
 
 export interface CommunityPost {
   id: string;
-  title: string;
-  description: string;
-  routineId: string;
-  videoUrl?: string;
-  thumbnailUrl?: string;
   authorId: string;
   authorName: string;
-  likes: number;
-  bookmarks: number;
-  bodyParts: string[];
+  authorPhotoURL: string | null;
+  title: string;
+  description: string;
+  youtubeUrl: string | null;
+  // Stored alongside youtubeUrl for fast thumb/embed rendering without re-parsing on the client.
+  youtubeId: string | null;
+  routine: Routine;
+  likeCount: number;
+  commentCount: number;
+  createdAt: number;
+}
+
+export interface PostComment {
+  id: string;
+  authorId: string;
+  authorName: string;
+  authorPhotoURL: string | null;
+  text: string;
   createdAt: number;
 }
 

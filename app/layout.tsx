@@ -21,7 +21,6 @@ export const metadata: Metadata = {
   description:
     "나만의 페이스로. 인터벌 타이머 · 메트로놈 · AI 추천 운동 · 커뮤니티.",
   applicationName: "MyPace",
-  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     title: "MyPace",

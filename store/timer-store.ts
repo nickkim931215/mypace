@@ -61,6 +61,7 @@ interface TimerStore {
   getCurrentRoutine: () => Routine | null;
   createRoutine: (partial?: Partial<Routine>) => string;
   duplicateRoutine: (id: string) => string;
+  importRoutine: (source: Routine) => string;
   deleteRoutine: (id: string) => void;
   selectRoutine: (id: string) => void;
   updateRoutine: (id: string, patch: Partial<Routine>) => void;
@@ -149,6 +150,27 @@ export const useTimerStore = create<TimerStore>()(
             currentRoutineId: id,
           }));
           return id;
+        },
+
+        importRoutine: (source) => {
+          const newId = uid();
+          const now = Date.now();
+          const copy: Routine = {
+            ...source,
+            id: newId,
+            name: source.name,
+            rounds: source.rounds.map((r) => ({ ...r, id: uid() })),
+            createdAt: now,
+            updatedAt: now,
+            // Strip publish-only metadata when bringing it into the local library.
+            isPublic: false,
+            authorId: undefined,
+          };
+          set((s) => ({
+            routines: [copy, ...s.routines],
+            currentRoutineId: newId,
+          }));
+          return newId;
         },
 
         duplicateRoutine: (id) => {
