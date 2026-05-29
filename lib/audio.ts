@@ -140,72 +140,111 @@ class AudioEngine {
     src.stop(t0 + duration + 0.02);
   }
 
+  /* Per-theme timbre. The melodic identity of each cue stays the same;
+     the theme reshapes oscillator type, pitch, loudness and decay so the
+     three sound packs feel distinct. */
+  private timbre(): {
+    osc: OscillatorType;
+    pitch: number;
+    peakMul: number;
+    durMul: number;
+    punch: boolean;
+  } {
+    switch (this.theme) {
+      case "gym-pro":
+        return { osc: "sawtooth", pitch: 1, peakMul: 1.2, durMul: 0.8, punch: true };
+      case "zen":
+        return { osc: "triangle", pitch: 0.75, peakMul: 0.65, durMul: 1.7, punch: false };
+      default: // minimal
+        return { osc: "sine", pitch: 1, peakMul: 1, durMul: 1, punch: false };
+    }
+  }
+
   // ─── Public sound API ────────────────────────────────────────
 
   countdown(n: 1 | 2 | 3) {
     if (!this.timerBus) return;
+    const t = this.timbre();
     // Rising tone: 1 = highest
     const base = 660;
-    const freq = base + (3 - n) * 220; // n=3 → 660, n=2 → 880, n=1 → 1100
+    const freq = (base + (3 - n) * 220) * t.pitch; // n=3 → 660, n=2 → 880, n=1 → 1100
     this.pluck(this.timerBus, {
       freq,
-      duration: 0.18,
-      type: "sine",
-      peak: 0.55,
+      duration: 0.18 * t.durMul,
+      type: t.osc,
+      peak: 0.55 * t.peakMul,
     });
   }
 
   roundStart() {
     if (!this.timerBus) return;
+    const t = this.timbre();
+    if (t.punch) {
+      this.noiseBurst(this.timerBus, { duration: 0.06, peak: 0.3, freq: 3000, q: 1.2 });
+    }
     // Bright two-tone chime
-    this.pluck(this.timerBus, { freq: 880, duration: 0.32, type: "sine", peak: 0.5 });
     this.pluck(this.timerBus, {
-      freq: 1320,
-      duration: 0.42,
-      type: "sine",
-      peak: 0.4,
+      freq: 880 * t.pitch,
+      duration: 0.32 * t.durMul,
+      type: t.osc,
+      peak: 0.5 * t.peakMul,
+    });
+    this.pluck(this.timerBus, {
+      freq: 1320 * t.pitch,
+      duration: 0.42 * t.durMul,
+      type: t.osc,
+      peak: 0.4 * t.peakMul,
       delay: 0.08,
     });
   }
 
   roundEnd() {
     if (!this.timerBus) return;
-    this.pluck(this.timerBus, { freq: 660, duration: 0.4, type: "sine", peak: 0.4 });
+    const t = this.timbre();
     this.pluck(this.timerBus, {
-      freq: 440,
-      duration: 0.5,
-      type: "sine",
-      peak: 0.35,
+      freq: 660 * t.pitch,
+      duration: 0.4 * t.durMul,
+      type: t.osc,
+      peak: 0.4 * t.peakMul,
+    });
+    this.pluck(this.timerBus, {
+      freq: 440 * t.pitch,
+      duration: 0.5 * t.durMul,
+      type: t.osc,
+      peak: 0.35 * t.peakMul,
       delay: 0.05,
     });
   }
 
   restStart() {
     if (!this.timerBus) return;
+    const t = this.timbre();
     this.pluck(this.timerBus, {
-      freq: 392,
-      duration: 0.6,
-      type: "triangle",
-      peak: 0.4,
+      freq: 392 * t.pitch,
+      duration: 0.6 * t.durMul,
+      // Rest is always mellow; gym-pro's saw would be harsh here.
+      type: this.theme === "gym-pro" ? "square" : "triangle",
+      peak: 0.4 * t.peakMul,
     });
   }
 
   workoutComplete() {
     if (!this.timerBus) return;
+    const t = this.timbre();
     // C major arpeggio + bell
     const notes = [523.25, 659.25, 783.99, 1046.5];
     notes.forEach((f, i) =>
       this.pluck(this.timerBus!, {
-        freq: f,
-        duration: 0.8,
-        type: "sine",
-        peak: 0.5,
+        freq: f * t.pitch,
+        duration: 0.8 * t.durMul,
+        type: t.osc,
+        peak: 0.5 * t.peakMul,
         delay: i * 0.12,
       }),
     );
     this.noiseBurst(this.timerBus, {
       duration: 0.6,
-      peak: 0.15,
+      peak: t.punch ? 0.22 : 0.15,
       freq: 6000,
       delay: 0.48,
     });
@@ -243,6 +282,13 @@ class AudioEngine {
         peak: peak * 0.8,
       });
     }
+  }
+
+  /** Play a short sample of a sound pack (for the settings preview). */
+  previewTheme(theme: SoundTheme) {
+    this.unlock();
+    this.setTheme(theme);
+    this.roundStart();
   }
 
   uiTap() {

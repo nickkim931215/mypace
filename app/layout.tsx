@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { SyncBridge } from "@/components/sync-bridge";
+import { Pwa } from "@/components/pwa";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -50,6 +51,7 @@ export default function RootLayout({
         <AuthProvider>
           <SyncBridge />
           {children}
+          <Pwa />
         </AuthProvider>
       </body>
     </html>

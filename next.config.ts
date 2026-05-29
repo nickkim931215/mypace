@@ -22,6 +22,20 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Always revalidate the service worker so updates ship immediately.
+        source: "/sw.js",
+        headers: [
+          {
+            key: "Content-Type",
+            value: "application/javascript; charset=utf-8",
+          },
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
     ];
   },
 };

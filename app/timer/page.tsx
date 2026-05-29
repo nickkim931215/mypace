@@ -7,6 +7,7 @@ import { useTimerStore } from "@/store/timer-store";
 import { RoutineHeader } from "@/components/builder/routine-header";
 import { RoundList } from "@/components/builder/round-list";
 import { AddRoundBar } from "@/components/builder/add-round-bar";
+import { SoundSettings } from "@/components/timer/sound-settings";
 
 export default function TimerBuilderPage() {
   const [hydrated, setHydrated] = useState(false);
@@ -48,6 +49,13 @@ export default function TimerBuilderPage() {
           </span>
           <RoundList routine={routine} />
           <AddRoundBar routineId={routine.id} />
+        </div>
+
+        <div className="mt-10 flex flex-col gap-2">
+          <span className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim px-1">
+            사운드 & 설정
+          </span>
+          <SoundSettings />
         </div>
       </main>
       <SiteFooter />
