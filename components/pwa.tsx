@@ -1,21 +1,38 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Share, X } from "lucide-react";
+import { Download, Share, X, MoreVertical } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+declare global {
+  interface Window {
+    __bipEvent?: BeforeInstallPromptEvent | null;
+  }
+}
+
 const DISMISS_KEY = "mypace-install-dismissed";
+
+type Mode = "prompt" | "ios" | "manual";
 
 export function Pwa() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null,
   );
-  const [showIosHint, setShowIosHint] = useState(false);
-  const [dismissed, setDismissed] = useState(true);
+  const [mode, setMode] = useState<Mode | null>(null);
+
+  const close = () => {
+    setMode(null);
+    setDeferred(null);
+    try {
+      localStorage.setItem(DISMISS_KEY, "1");
+    } catch {
+      // ignore (private mode etc.)
+    }
+  };
 
   // Register the service worker (production only — dev caching causes stale chunks).
   useEffect(() => {
@@ -40,28 +57,49 @@ export function Pwa() {
     if (standalone) return;
 
     if (localStorage.getItem(DISMISS_KEY) === "1") return;
-    setDismissed(false);
 
     const isIos =
-      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-      !("MSStream" in window);
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window);
     if (isIos) {
-      setShowIosHint(true);
+      setMode("ios");
       return;
     }
 
+    // Use the event captured by the early inline script (it can fire before this
+    // component mounts), and also keep listening in case it fires later.
+    const adopt = (e: BeforeInstallPromptEvent) => {
+      setDeferred(e);
+      setMode("prompt");
+    };
+    if (window.__bipEvent) adopt(window.__bipEvent);
+
+    const onReady = () => {
+      if (window.__bipEvent) adopt(window.__bipEvent);
+    };
     const onPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferred(e as BeforeInstallPromptEvent);
+      adopt(e as BeforeInstallPromptEvent);
     };
+    const onInstalled = () => close();
+    window.addEventListener("bipready", onReady);
     window.addEventListener("beforeinstallprompt", onPrompt);
-    return () => window.removeEventListener("beforeinstallprompt", onPrompt);
-  }, []);
+    window.addEventListener("bipinstalled", onInstalled);
 
-  const close = () => {
-    setDismissed(true);
-    localStorage.setItem(DISMISS_KEY, "1");
-  };
+    // Fallback: if no install event arrives shortly (common on Android Chrome
+    // when the mini-infobar was previously dismissed, or on in-app browsers),
+    // still surface a manual "add to home screen" hint so phones aren't left
+    // without any install affordance.
+    const t = window.setTimeout(() => {
+      setMode((m) => m ?? "manual");
+    }, 3500);
+
+    return () => {
+      window.removeEventListener("bipready", onReady);
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("bipinstalled", onInstalled);
+      window.clearTimeout(t);
+    };
+  }, []);
 
   const install = async () => {
     if (!deferred) return;
@@ -71,7 +109,7 @@ export function Pwa() {
     close();
   };
 
-  if (dismissed || (!deferred && !showIosHint)) return null;
+  if (!mode) return null;
 
   return (
     <div className="fixed inset-x-0 bottom-4 z-[60] flex justify-center px-4">
@@ -81,20 +119,25 @@ export function Pwa() {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-[13px] font-medium text-foreground">
-            홈 화면에 MyPace 설치
+            앱으로 보시겠어요?
           </p>
-          {showIosHint ? (
+          {mode === "ios" ? (
             <p className="text-[12px] text-foreground-muted leading-snug flex items-center gap-1 flex-wrap">
               공유 <Share size={12} className="inline" /> → &ldquo;홈 화면에
               추가&rdquo;
             </p>
+          ) : mode === "manual" ? (
+            <p className="text-[12px] text-foreground-muted leading-snug flex items-center gap-1 flex-wrap">
+              메뉴 <MoreVertical size={12} className="inline" /> → &ldquo;앱
+              설치&rdquo; 또는 &ldquo;홈 화면에 추가&rdquo;
+            </p>
           ) : (
             <p className="text-[12px] text-foreground-muted leading-snug">
-              앱처럼 빠르게 실행하고 오프라인에서도 사용하세요.
+              홈 화면에 설치하고 앱처럼 빠르게 실행하세요.
             </p>
           )}
         </div>
-        {!showIosHint && (
+        {mode === "prompt" && (
           <button
             onClick={install}
             className="shrink-0 h-9 px-4 rounded-full bg-accent text-black text-[13px] font-semibold active:scale-95 transition-transform"

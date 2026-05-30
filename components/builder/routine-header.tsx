@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { ChevronDown, Plus, Copy, Trash2, Play } from "lucide-react";
+import { ChevronDown, Plus, Copy, Trash2, Play, Check, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTimerStore } from "@/store/timer-store";
 import { formatClock } from "@/lib/utils";
@@ -15,7 +14,6 @@ interface Props {
 }
 
 export function RoutineHeader({ routine }: Props) {
-  const router = useRouter();
   const routines = useTimerStore((s) => s.routines);
   const selectRoutine = useTimerStore((s) => s.selectRoutine);
   const createRoutine = useTimerStore((s) => s.createRoutine);
@@ -25,9 +23,18 @@ export function RoutineHeader({ routine }: Props) {
   const setRepeat = useTimerStore((s) => s.setRepeat);
 
   const [open, setOpen] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
   const work = routine.rounds.filter((r) => r.type === "work").length;
   const rest = routine.rounds.filter((r) => r.type === "rest").length;
+
+  // Routines auto-persist (localStorage + cloud sync), but an explicit "저장"
+  // gives clear confirmation and bumps updatedAt so a sync push is triggered.
+  const handleSave = () => {
+    renameRoutine(routine.id, routine.name.trim() || "새 루틴");
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 1600);
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -112,12 +119,27 @@ export function RoutineHeader({ routine }: Props) {
           )}
         </div>
 
-        <Link href={`/timer/run`}>
-          <Button variant="primary" size="md">
-            <Play size={15} fill="currentColor" />
-            시작
+        <div className="flex items-center gap-2">
+          <Button
+            variant={justSaved ? "primary" : "secondary"}
+            size="md"
+            onClick={handleSave}
+          >
+            {justSaved ? (
+              <>
+                <Check size={15} /> 저장됨
+              </>
+            ) : (
+              "저장"
+            )}
           </Button>
-        </Link>
+          <Link href={`/timer/run`}>
+            <Button variant="primary" size="md">
+              <Play size={15} fill="currentColor" />
+              시작
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Name + meta */}
@@ -166,6 +188,24 @@ export function RoutineHeader({ routine }: Props) {
               </button>
             </div>
           </span>
+          {routine.rating ? (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-foreground-dim">평가</span>
+              <span className="inline-flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    size={13}
+                    className={cn(
+                      n <= routine.rating!
+                        ? "text-accent fill-accent"
+                        : "text-surface-3 fill-surface-3",
+                    )}
+                  />
+                ))}
+              </span>
+            </span>
+          ) : null}
         </div>
       </div>
     </div>

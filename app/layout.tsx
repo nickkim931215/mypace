@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { SyncBridge } from "@/components/sync-bridge";
 import { Pwa } from "@/components/pwa";
+import { UiSounds } from "@/components/ui-sounds";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -48,8 +49,20 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        {/* Capture the install prompt as early as possible. The browser can fire
+            `beforeinstallprompt` before React hydrates and attaches its listener;
+            stashing it here (then replaying via a custom event) is what makes the
+            install banner reliably appear on phones, not just tablets. */}
+        <script
+          id="bip-capture"
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__bipEvent=e;window.dispatchEvent(new Event('bipready'));});window.addEventListener('appinstalled',function(){window.__bipEvent=null;window.dispatchEvent(new Event('bipinstalled'));});",
+          }}
+        />
         <AuthProvider>
           <SyncBridge />
+          <UiSounds />
           {children}
           <Pwa />
         </AuthProvider>

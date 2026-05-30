@@ -41,7 +41,7 @@ export function Hero() {
             Rhythm-driven workouts. Built for your pace.
           </span>
 
-          <h1 className="mt-7 font-display text-[44px] sm:text-[72px] leading-[0.95] tracking-[-0.04em] font-semibold">
+          <h1 className="mt-7 font-display text-[clamp(2.1rem,8.5vw,4.5rem)] leading-[1.05] sm:leading-[0.95] tracking-[-0.04em] font-semibold">
             나만의 페이스로,
             <br />
             <span className="text-accent">리듬에 맞춰</span> 운동하다

@@ -67,6 +67,8 @@ interface TimerStore {
   updateRoutine: (id: string, patch: Partial<Routine>) => void;
   renameRoutine: (id: string, name: string) => void;
   setRepeat: (id: string, repeat: number) => void;
+  rateRoutine: (id: string, rating: number) => void;
+  markRoutineCompleted: (id: string) => void;
 
   // Round operations
   addRound: (
@@ -226,6 +228,33 @@ export const useTimerStore = create<TimerStore>()(
             routines: s.routines.map((r) =>
               r.id === id
                 ? { ...r, repeat: Math.max(1, Math.floor(repeat)), updatedAt: Date.now() }
+                : r,
+            ),
+          })),
+
+        rateRoutine: (id, rating) =>
+          set((s) => ({
+            routines: s.routines.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    rating: Math.min(5, Math.max(1, Math.round(rating))),
+                    updatedAt: Date.now(),
+                  }
+                : r,
+            ),
+          })),
+
+        markRoutineCompleted: (id) =>
+          set((s) => ({
+            routines: s.routines.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    completedCount: (r.completedCount ?? 0) + 1,
+                    lastCompletedAt: Date.now(),
+                    updatedAt: Date.now(),
+                  }
                 : r,
             ),
           })),

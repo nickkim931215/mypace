@@ -10,7 +10,9 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     scope: "/",
     display: "standalone",
-    orientation: "portrait",
+    // "any" so the installed app follows the device rotation (portrait + landscape).
+    // Was "portrait", which locked Galaxy Tab / phones to a single orientation.
+    orientation: "any",
     background_color: "#0a0a0b",
     theme_color: "#0a0a0b",
     lang: "ko",

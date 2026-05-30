@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -8,6 +8,7 @@ import {
   Play,
   SkipBack,
   SkipForward,
+  Star,
   X,
   Volume2,
   VolumeX,
@@ -54,6 +55,34 @@ export function RunScreen({ routine }: Props) {
 
   const [hasStarted, setHasStarted] = useState(false);
 
+  // Responsive ring sizing. The ring used to be a fixed 340px; on small phones
+  // (and once a work round shows the metronome panel) that pushed the transport
+  // controls — including the play button — below the visible viewport. We size
+  // the ring from the available viewport so everything always fits, in both
+  // portrait and landscape. Reserve enough for the worst case (metronome shown)
+  // so the ring doesn't jump when the round type changes mid-run.
+  const [ringSize, setRingSize] = useState(300);
+  useEffect(() => {
+    const compute = () => {
+      const vh = window.innerHeight;
+      const vw = window.innerWidth;
+      const TOP_RESERVE = 84; // top bar + padding
+      const CENTER_EXTRAS = 96; // round badge + "다음 —" label
+      const BOTTOM_RESERVE = 236; // metronome panel + transport + paddings
+      const byHeight = vh - TOP_RESERVE - CENTER_EXTRAS - BOTTOM_RESERVE;
+      const byWidth = vw - 48;
+      setRingSize(Math.max(150, Math.min(340, byHeight, byWidth)));
+    };
+    compute();
+    window.addEventListener("resize", compute);
+    window.addEventListener("orientationchange", compute);
+    return () => {
+      window.removeEventListener("resize", compute);
+      window.removeEventListener("orientationchange", compute);
+    };
+  }, []);
+  const numberFontSize = Math.round(ringSize * 0.34);
+
   const isWork = snapshot.currentRound?.type === "work";
   const isRest = snapshot.currentRound?.type === "rest";
 
@@ -84,6 +113,18 @@ export function RunScreen({ routine }: Props) {
     reset();
     router.push("/timer");
   };
+
+  // Count a completion exactly once when the run finishes.
+  const markRoutineCompleted = useTimerStore((s) => s.markRoutineCompleted);
+  const completedRef = useRef(false);
+  useEffect(() => {
+    if (snapshot.status === "finished" && !completedRef.current) {
+      completedRef.current = true;
+      markRoutineCompleted(routine.id);
+    } else if (snapshot.status !== "finished") {
+      completedRef.current = false;
+    }
+  }, [snapshot.status, markRoutineCompleted, routine.id]);
 
   // Update BPM live for current round
   const updateRound = useTimerStore((s) => s.updateRound);
@@ -153,7 +194,7 @@ export function RunScreen({ routine }: Props) {
       </div>
 
       {/* Main center */}
-      <div className="flex-1 flex flex-col items-center justify-center px-5">
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-5">
         {/* Round badge */}
         <motion.div
           key={snapshot.roundIdx + snapshot.repeatIdx * 100}
@@ -202,7 +243,7 @@ export function RunScreen({ routine }: Props) {
         <ProgressRing
           progress={progress}
           color={ringColor}
-          size={340}
+          size={ringSize}
           strokeWidth={8}
         >
           <div className="flex flex-col items-center px-6">
@@ -223,7 +264,8 @@ export function RunScreen({ routine }: Props) {
               initial={pulse ? { scale: 1.18 } : { scale: 1 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 320, damping: 16 }}
-              className="tabular font-display font-semibold text-[88px] sm:text-[120px] leading-none tracking-[-0.05em] mt-1 text-foreground"
+              style={{ fontSize: numberFontSize }}
+              className="tabular font-display font-semibold leading-none tracking-[-0.05em] mt-1 text-foreground"
             >
               {formatClock(snapshot.remainingMs / 1000)}
             </motion.div>
@@ -339,13 +381,27 @@ function FinishedScreen({
   onRestart: () => void;
   onExit: () => void;
 }) {
+  const rateRoutine = useTimerStore((s) => s.rateRoutine);
+  const savedRating = useTimerStore(
+    (s) => s.routines.find((r) => r.id === routine.id)?.rating,
+  );
+  const [hovered, setHovered] = useState(0);
+
+  const handleRate = (n: number) => {
+    rateRoutine(routine.id, n);
+    audio.unlock();
+    audio.uiSuccess();
+  };
+
+  const shown = hovered || savedRating || 0;
+
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center text-center px-6">
+    <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center text-center px-6 overflow-y-auto py-10">
       <motion.div
         initial={{ scale: 0.7, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 16 }}
-        className="h-20 w-20 rounded-full bg-accent flex items-center justify-center mb-7"
+        className="h-20 w-20 rounded-full bg-accent flex items-center justify-center mb-7 shrink-0"
       >
         <svg
           width="36"
@@ -367,7 +423,41 @@ function FinishedScreen({
         {routine.name} · {formatClock(routine.totalDurationSec * routine.repeat)}{" "}
         완료
       </p>
-      <div className="mt-10 flex items-center gap-3">
+
+      {/* Star rating — rate this routine 1–5 stars. Saved immediately. */}
+      <div className="mt-9 flex flex-col items-center gap-2">
+        <span className="text-[12px] uppercase tracking-[0.18em] text-foreground-dim">
+          이 루틴 평가
+        </span>
+        <div className="flex items-center gap-1.5">
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button
+              key={n}
+              data-no-sound
+              onClick={() => handleRate(n)}
+              onMouseEnter={() => setHovered(n)}
+              onMouseLeave={() => setHovered(0)}
+              aria-label={`${n}점`}
+              className="p-1 active:scale-90 transition-transform"
+            >
+              <Star
+                size={32}
+                className={cn(
+                  "transition-colors",
+                  n <= shown
+                    ? "text-accent fill-accent"
+                    : "text-surface-3 fill-surface-3",
+                )}
+              />
+            </button>
+          ))}
+        </div>
+        <span className="h-5 text-[13px] text-foreground-muted">
+          {savedRating ? `${savedRating}점으로 저장됨 ✓` : "별을 눌러 평가하세요"}
+        </span>
+      </div>
+
+      <div className="mt-9 flex items-center gap-3 shrink-0">
         <button
           onClick={onRestart}
           className="h-12 px-6 rounded-full bg-accent text-black font-medium"

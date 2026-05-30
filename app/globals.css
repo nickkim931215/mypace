@@ -93,10 +93,24 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   overscroll-behavior-y: none;
+  /* Keep Korean phrases on one line instead of breaking mid-word, which was
+     causing ragged/misaligned wraps on small phones. Long latin/URLs still
+     break so nothing overflows its container. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 body {
   font-feature-settings: "ss01", "cv01", "cv11";
+  /* Slightly smaller base on narrow phones so dense rows (builder, run meta)
+     don't wrap awkwardly; restored at the sm breakpoint. */
+  font-size: 15px;
+}
+
+@media (min-width: 640px) {
+  body {
+    font-size: 16px;
+  }
 }
 
 /* Tabular numbers for timer display */

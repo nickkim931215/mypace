@@ -20,6 +20,11 @@ export interface Routine {
   authorId?: string;
   isPublic?: boolean;
   tags?: string[];
+  // User's own star rating for this routine (1–5), set after completing a run.
+  rating?: number;
+  // How many times this routine's run finished, and when last completed.
+  completedCount?: number;
+  lastCompletedAt?: number;
 }
 
 export interface CommunityPost {
