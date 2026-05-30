@@ -112,7 +112,7 @@ export function Pwa() {
   if (!mode) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-4 z-[60] flex justify-center px-4">
+    <div className="fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[60] flex justify-center px-4">
       <div className="flex items-center gap-3 rounded-2xl border border-border-strong bg-surface-1/95 backdrop-blur px-4 py-3 shadow-2xl max-w-md w-full">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15">
           <Download size={18} className="text-accent" />

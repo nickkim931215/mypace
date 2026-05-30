@@ -66,9 +66,10 @@ export function RunScreen({ routine }: Props) {
     const compute = () => {
       const vh = window.innerHeight;
       const vw = window.innerWidth;
-      const TOP_RESERVE = 84; // top bar + padding
+      // Reserves include slack for safe-area insets (notch / home indicator).
+      const TOP_RESERVE = 100; // top bar + padding + status bar inset
       const CENTER_EXTRAS = 96; // round badge + "다음 —" label
-      const BOTTOM_RESERVE = 236; // metronome panel + transport + paddings
+      const BOTTOM_RESERVE = 256; // metronome panel + transport + paddings + inset
       const byHeight = vh - TOP_RESERVE - CENTER_EXTRAS - BOTTOM_RESERVE;
       const byWidth = vw - 48;
       setRingSize(Math.max(150, Math.min(340, byHeight, byWidth)));
@@ -162,8 +163,8 @@ export function RunScreen({ routine }: Props) {
         transition: "box-shadow 200ms ease",
       }}
     >
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-5 sm:px-8 pt-5 sm:pt-7">
+      {/* Top bar — pad for the status-bar / notch (viewportFit: cover). */}
+      <div className="flex items-center justify-between px-5 sm:px-8 pt-[max(1.25rem,env(safe-area-inset-top))] sm:pt-[max(1.75rem,env(safe-area-inset-top))]">
         <button
           onClick={exit}
           className="h-10 w-10 rounded-full bg-surface-1 hover:bg-surface-2 border border-border-subtle flex items-center justify-center text-foreground-muted"
@@ -291,8 +292,8 @@ export function RunScreen({ routine }: Props) {
         </div>
       </div>
 
-      {/* Bottom */}
-      <div className="px-5 sm:px-8 pb-7 sm:pb-10 flex flex-col gap-4">
+      {/* Bottom — pad for the home indicator / gesture bar (viewportFit: cover). */}
+      <div className="px-5 sm:px-8 pb-[max(1.75rem,env(safe-area-inset-bottom))] sm:pb-[max(2.5rem,env(safe-area-inset-bottom))] flex flex-col gap-4">
         {/* Metronome */}
         {snapshot.currentRound?.type === "work" && (
           <MetronomePanel

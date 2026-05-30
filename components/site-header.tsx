@@ -14,8 +14,8 @@ const NAV = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border-subtle">
-      <div className="mx-auto max-w-6xl px-5 sm:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border-subtle pt-[env(safe-area-inset-top)]">
+      <div className="mx-auto max-w-6xl px-[max(1.25rem,env(safe-area-inset-left))] sm:px-8 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center" aria-label="MyPace home">
           <Logo />
         </Link>
