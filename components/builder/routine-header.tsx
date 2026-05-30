@@ -38,8 +38,9 @@ export function RoutineHeader({ routine }: Props) {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Routine switcher */}
-      <div className="flex items-center justify-between gap-3">
+      {/* Routine switcher — stacks on phones so the switcher + 저장/시작 buttons
+          never crowd each other on a narrow screen. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative">
           <button
             onClick={() => setOpen((o) => !o)}
@@ -119,7 +120,7 @@ export function RoutineHeader({ routine }: Props) {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2">
           <Button
             variant={justSaved ? "primary" : "secondary"}
             size="md"
