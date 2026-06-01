@@ -25,3 +25,17 @@ export function formatDuration(totalSeconds: number) {
   if (m > 0) return s > 0 ? `${m}분 ${s}초` : `${m}분`;
   return `${s}초`;
 }
+
+/**
+ * Build a YouTube search deep-link for learning how to do an exercise.
+ * We deliberately link to a *search* (not a single video ID): an LLM-guessed
+ * video ID hallucinates dead/wrong links, whereas a search query always lands
+ * on real, relevant results — and on mobile opens the YouTube app directly.
+ * Biased toward Shorts so beginners get a quick form demo.
+ */
+export function youtubeLearnUrl(exerciseName: string) {
+  // Drop equipment qualifiers like "(덤벨)" so the search stays on the movement.
+  const movement = exerciseName.replace(/\s*\([^)]*\)\s*/g, " ").trim();
+  const query = `${movement} 운동 방법 shorts`;
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+}

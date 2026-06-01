@@ -1,9 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles, Play, BookmarkPlus, RotateCcw, FlaskConical } from "lucide-react";
+import {
+  Sparkles,
+  Play,
+  BookmarkPlus,
+  RotateCcw,
+  FlaskConical,
+  GraduationCap,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn, formatClock } from "@/lib/utils";
+import { cn, formatClock, youtubeLearnUrl } from "@/lib/utils";
 import type { RecommendResult } from "@/lib/ai-recommend";
 
 interface Props {
@@ -109,6 +116,19 @@ export function RecommendationResult({
                   <span className="tabular text-[10px] text-foreground-dim shrink-0">
                     {r.bpm}♪
                   </span>
+                ) : null}
+                {r.type === "work" ? (
+                  <a
+                    href={youtubeLearnUrl(r.name)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-0.5 shrink-0 text-[10px] text-foreground-dim hover:text-accent transition-colors"
+                    title={`${r.name} 운동 영상 보기`}
+                  >
+                    <GraduationCap size={11} />
+                    배우기
+                  </a>
                 ) : null}
               </div>
               <span className="tabular text-[12px] text-foreground-muted shrink-0">
