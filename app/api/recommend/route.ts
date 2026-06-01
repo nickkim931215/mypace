@@ -52,10 +52,13 @@ export async function POST(req: Request) {
   const ai = new GoogleGenAI({ apiKey });
   const prompt = buildPrompt(input);
 
-  // gemini-2.5-flash intermittently returns 503 UNAVAILABLE ("high demand") or
-  // 429 RESOURCE_EXHAUSTED. These are transient server-side overloads, not key
-  // errors — retry a few times with exponential backoff + jitter before giving
-  // up and falling back to mock. Non-transient errors break out immediately.
+  // gemini-2.5-flash intermittently returns 503 UNAVAILABLE ("high demand") —
+  // a transient server-side overload, not a key error. Retry a few times with
+  // exponential backoff + jitter before giving up and falling back to mock.
+  // NOTE: we deliberately do NOT retry 429 RESOURCE_EXHAUSTED — on the free
+  // tier that's a per-DAY quota (20 req/day for gemini-2.5-flash) that a
+  // sub-second backoff can't clear, so retrying just wastes calls. A 429 falls
+  // straight through to the mock fallback.
   const MAX_ATTEMPTS = 3;
   let lastErr: unknown;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -74,7 +77,7 @@ export async function POST(req: Request) {
     } catch (err) {
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
-      const transient = /\b(503|429)\b|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg);
+      const transient = /\b503\b|UNAVAILABLE/i.test(msg);
       if (!transient || attempt === MAX_ATTEMPTS) break;
       // ~400ms, ~800ms backoff with a little jitter to avoid thundering herd
       const delay = 400 * 2 ** (attempt - 1) + Math.floor(Math.random() * 150);
