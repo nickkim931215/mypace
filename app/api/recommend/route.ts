@@ -49,28 +49,45 @@ export async function POST(req: Request) {
     return NextResponse.json(mock);
   }
 
-  try {
-    const ai = new GoogleGenAI({ apiKey });
-    const prompt = buildPrompt(input);
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.8,
-      },
-    });
-    const text = response.text ?? "";
-    const result = parseRecommendation(text, input);
-    return NextResponse.json(result);
-  } catch (err) {
-    console.error("[recommend] Gemini call failed:", err);
-    // Graceful fallback to mock so the user still gets something
-    const fallback = mockRecommendation(input);
-    return NextResponse.json({
-      ...fallback,
-      source: "mock" as const,
-      _error: err instanceof Error ? err.message : "AI 호출 실패",
-    });
+  const ai = new GoogleGenAI({ apiKey });
+  const prompt = buildPrompt(input);
+
+  // gemini-2.5-flash intermittently returns 503 UNAVAILABLE ("high demand") or
+  // 429 RESOURCE_EXHAUSTED. These are transient server-side overloads, not key
+  // errors — retry a few times with exponential backoff + jitter before giving
+  // up and falling back to mock. Non-transient errors break out immediately.
+  const MAX_ATTEMPTS = 3;
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.8,
+        },
+      });
+      const text = response.text ?? "";
+      const result = parseRecommendation(text, input);
+      return NextResponse.json(result);
+    } catch (err) {
+      lastErr = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      const transient = /\b(503|429)\b|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(msg);
+      if (!transient || attempt === MAX_ATTEMPTS) break;
+      // ~400ms, ~800ms backoff with a little jitter to avoid thundering herd
+      const delay = 400 * 2 ** (attempt - 1) + Math.floor(Math.random() * 150);
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
+
+  console.error("[recommend] Gemini call failed:", lastErr);
+  // Graceful fallback to mock so the user still gets something
+  const fallback = mockRecommendation(input);
+  return NextResponse.json({
+    ...fallback,
+    source: "mock" as const,
+    _error: lastErr instanceof Error ? lastErr.message : "AI 호출 실패",
+  });
 }
