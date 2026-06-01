@@ -18,6 +18,11 @@ import {
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/firebase/config";
+import {
+  isInAppBrowser,
+  isStandalonePWA,
+  openInExternalBrowser,
+} from "@/lib/browser-env";
 
 type AuthState =
   | { status: "unconfigured" }
@@ -62,13 +67,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     setError(null);
+
+    // In-app webviews (KakaoTalk/Naver/Instagram/…) are blocked by Google's
+    // OAuth "secure browser" policy — the consent screen 403s with
+    // `disallowed_useragent`. There is no way to authenticate inside the
+    // webview, so hand the user off to the system browser instead of leading
+    // them into a dead end.
+    if (isInAppBrowser()) {
+      const handed = openInExternalBrowser();
+      setError(
+        handed
+          ? "인앱 브라우저에서는 구글 로그인이 안 돼요. 외부 브라우저로 여는 중…"
+          : "인앱 브라우저에서는 구글 로그인이 안 돼요. 우측 상단 메뉴에서 ‘다른 브라우저로 열기’(Chrome·Safari)를 선택해 로그인해주세요.",
+      );
+      return;
+    }
+
     const auth = getFirebaseAuth();
     const provider = new GoogleAuthProvider();
 
-    // Popup is the primary path. Redirect is the fallback only when the
-    // browser truly blocks the popup — in some embedded previews redirect
-    // loses the session on the way back due to partitioned iframe storage,
-    // so we'd rather try popup first.
+    // Installed PWAs (standalone display mode) can't reliably round-trip a
+    // popup — it opens outside the app window and the handshake is lost. Go
+    // straight to redirect. With the first-party /__/auth proxy (next.config
+    // rewrites) the redirect keeps its session on the way back, which the old
+    // cross-domain firebaseapp.com authDomain dropped.
+    if (isStandalonePWA()) {
+      try {
+        await signInWithRedirect(auth, provider);
+      } catch (e) {
+        console.error("[auth] standalone redirect failed:", e);
+        setError("로그인에 실패했습니다. 다시 시도해주세요.");
+      }
+      return;
+    }
+
+    // Browser tab: popup is the primary path. Redirect is the fallback only
+    // when the browser truly blocks the popup.
     try {
       await signInWithPopup(auth, provider);
       return;

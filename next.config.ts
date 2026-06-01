@@ -7,6 +7,30 @@ const nextConfig: NextConfig = {
     "*.cloudworkstations.dev",
     "*.cluster-htdgsbmflbdmov5xrjithceibm.cloudworkstations.dev",
   ],
+  // Proxy Firebase Auth's helper endpoints through our own origin so the
+  // sign-in handler/iframe are first-party. Required for signInWithRedirect to
+  // survive in installed PWAs and third-party-cookie-blocking browsers: when
+  // authDomain points at <project>.firebaseapp.com (a different origin), the
+  // redirect round-trip loses its session via storage partitioning. With this
+  // proxy in place, set NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN to this app's own
+  // domain (e.g. mypace-wiqy.vercel.app) so the SDK hits these local paths.
+  async rewrites() {
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    if (!projectId) return [];
+    const authHost = `https://${projectId}.firebaseapp.com`;
+    return {
+      beforeFiles: [
+        {
+          source: "/__/auth/:path*",
+          destination: `${authHost}/__/auth/:path*`,
+        },
+        {
+          source: "/__/firebase/:path*",
+          destination: `${authHost}/__/firebase/:path*`,
+        },
+      ],
+    };
+  },
   async headers() {
     return [
       {

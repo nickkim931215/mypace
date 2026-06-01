@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { Download, Share, X, MoreVertical, ExternalLink } from "lucide-react";
+import {
+  isInAppBrowser,
+  isStandalonePWA,
+  openInExternalBrowser,
+} from "@/lib/browser-env";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -55,10 +60,7 @@ export function Pwa() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const standalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as { standalone?: boolean }).standalone === true;
-    if (standalone) return;
+    if (isStandalonePWA()) return;
 
     if (localStorage.getItem(DISMISS_KEY) === "1") return;
 
@@ -66,13 +68,9 @@ export function Pwa() {
     // In-app browsers (very common in Korea — links opened from KakaoTalk,
     // Naver, Instagram, etc.). These webviews never fire beforeinstallprompt
     // and cannot install a PWA, so we must guide the user to a real browser.
-    const inApp =
-      /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|FB_IAB|Line\/|DaumApps|everytimeApp|Snapchat|Twitter|; wv\)/i.test(
-        ua,
-      );
     const isIos = /iPad|iPhone|iPod/.test(ua) && !("MSStream" in window);
 
-    if (inApp) {
+    if (isInAppBrowser()) {
       setMode("inapp");
       return;
     }
@@ -135,26 +133,10 @@ export function Pwa() {
     }
   };
 
-  // Break out of an in-app webview into the system browser.
+  // Break out of an in-app webview into the system browser. iOS webviews have
+  // no programmatic handoff, so fall back to showing manual instructions.
   const openExternal = () => {
-    const url = window.location.href;
-    const ua = navigator.userAgent;
-    if (/KAKAOTALK/i.test(ua)) {
-      window.location.href =
-        "kakaotalk://web/openExternal?url=" + encodeURIComponent(url);
-      return;
-    }
-    if (/Android/i.test(ua)) {
-      // Hand off to Chrome via an Android intent URL.
-      const noScheme = url.replace(/^https?:\/\//, "");
-      window.location.href =
-        "intent://" +
-        noScheme +
-        "#Intent;scheme=https;package=com.android.chrome;end";
-      return;
-    }
-    // iOS in-app webview can't be auto-handed off — show instructions instead.
-    setShowSteps(true);
+    if (!openInExternalBrowser()) setShowSteps(true);
   };
 
   const onPrimary = () => {
