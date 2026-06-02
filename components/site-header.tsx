@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/user-menu";
@@ -14,6 +17,14 @@ const NAV = [
 ];
 
 export function SiteHeader() {
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Close the mobile menu whenever the route changes.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border-subtle pt-[env(safe-area-inset-top)]">
       <div className="mx-auto max-w-6xl px-[max(1.25rem,env(safe-area-inset-left))] sm:px-8 h-16 flex items-center justify-between">
@@ -38,8 +49,32 @@ export function SiteHeader() {
             </Button>
           </Link>
           <UserMenu />
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label="메뉴"
+            aria-expanded={open}
+            className="md:hidden h-9 w-9 rounded-full hover:bg-surface-1 flex items-center justify-center text-foreground-muted transition-colors"
+          >
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
         </div>
       </div>
+
+      {open && (
+        <nav className="md:hidden border-t border-border-subtle bg-background/95 backdrop-blur-xl px-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-3 pt-1">
+          {NAV.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className="flex items-center px-3 h-12 text-[15px] text-foreground-muted hover:text-foreground hover:bg-surface-1 rounded-xl transition-colors"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      )}
     </header>
   );
 }
