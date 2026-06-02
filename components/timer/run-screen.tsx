@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Pause,
@@ -473,6 +474,13 @@ function FinishedScreen({
           종료
         </button>
       </div>
+
+      <Link
+        href="/history"
+        className="mt-6 text-[13px] text-foreground-muted hover:text-accent transition-colors"
+      >
+        내 기록 보기 →
+      </Link>
       </div>
     </div>
   );
