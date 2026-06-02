@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import type { Round, Routine } from "@/lib/types";
+import type { Round, Routine, WorkoutCompletion } from "@/lib/types";
 
 const uid = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -46,6 +46,9 @@ export type SoundTheme = "minimal" | "gym-pro" | "zen";
 interface TimerStore {
   routines: Routine[];
   currentRoutineId: string | null;
+
+  // Private per-user log of finished runs (date-based history + streak).
+  completions: WorkoutCompletion[];
 
   // Audio / settings
   masterVolume: number;
@@ -109,6 +112,7 @@ export const useTimerStore = create<TimerStore>()(
       return {
         routines: [seed],
         currentRoutineId: seed.id,
+        completions: [],
 
         masterVolume: 0.8,
         timerVolume: 1,
@@ -246,18 +250,34 @@ export const useTimerStore = create<TimerStore>()(
           })),
 
         markRoutineCompleted: (id) =>
-          set((s) => ({
-            routines: s.routines.map((r) =>
-              r.id === id
-                ? {
-                    ...r,
-                    completedCount: (r.completedCount ?? 0) + 1,
-                    lastCompletedAt: Date.now(),
-                    updatedAt: Date.now(),
-                  }
-                : r,
-            ),
-          })),
+          set((s) => {
+            const now = Date.now();
+            const routine = s.routines.find((r) => r.id === id);
+            const completion: WorkoutCompletion | null = routine
+              ? {
+                  id: uid(),
+                  routineId: id,
+                  routineName: routine.name,
+                  completedAt: now,
+                  durationSec: routine.totalDurationSec * routine.repeat,
+                }
+              : null;
+            return {
+              routines: s.routines.map((r) =>
+                r.id === id
+                  ? {
+                      ...r,
+                      completedCount: (r.completedCount ?? 0) + 1,
+                      lastCompletedAt: now,
+                      updatedAt: now,
+                    }
+                  : r,
+              ),
+              completions: completion
+                ? [...s.completions, completion]
+                : s.completions,
+            };
+          }),
 
         addRound: (routineId, round) =>
           set((s) => ({

@@ -27,6 +27,16 @@ export interface Routine {
   lastCompletedAt?: number;
 }
 
+// One private "I finished this routine" event. Append-only log per user;
+// powers the date-based history calendar + streak. Synced inside the user doc.
+export interface WorkoutCompletion {
+  id: string;
+  routineId: string;
+  routineName: string;
+  completedAt: number; // ms epoch
+  durationSec: number; // planned total for the routine (rounds × repeat)
+}
+
 export interface CommunityPost {
   id: string;
   authorId: string;

@@ -6,6 +6,7 @@ import { useTimerStore } from "@/store/timer-store";
 import { useSyncStore } from "@/store/sync-store";
 import {
   maxUpdatedAt,
+  mergeCompletions,
   pushUserDoc,
   subscribeUserDoc,
   type CloudSnapshot,
@@ -37,6 +38,7 @@ export function SyncBridge() {
       return {
         routines: s.routines,
         currentRoutineId: s.currentRoutineId,
+        completions: s.completions,
         updatedAt: Math.max(localMax, Date.now()),
       };
     }
@@ -84,12 +86,22 @@ export function SyncBridge() {
             ? cloud.updatedAt >= localMax
             : cloud.updatedAt > localMax;
 
+        // History is append-only: always union, never let a reconcile drop
+        // completions logged on either side.
+        const mergedCompletions = mergeCompletions(
+          local.completions,
+          cloud.completions,
+        );
+        const completionsGrew =
+          mergedCompletions.length !== local.completions.length;
+
         if (shouldApplyRemote && cloud.routines.length > 0) {
           applyingRemoteRef.current = true;
           useTimerStore.setState({
             routines: cloud.routines,
             currentRoutineId:
               cloud.currentRoutineId ?? cloud.routines[0]?.id ?? null,
+            completions: mergedCompletions,
           });
           // Release on next tick so the subscriber sees consistent state.
           queueMicrotask(() => {
@@ -97,6 +109,15 @@ export function SyncBridge() {
           });
           lastPushedAtRef.current = cloud.updatedAt;
           useSyncStore.getState().markSynced();
+        } else if (completionsGrew) {
+          // Not taking remote routines, but the cloud had history we lack —
+          // absorb it, then push our (now-unioned) log back up.
+          applyingRemoteRef.current = true;
+          useTimerStore.setState({ completions: mergedCompletions });
+          queueMicrotask(() => {
+            applyingRemoteRef.current = false;
+            schedulePush();
+          });
         } else if (!initialAppliedRef.current) {
           // Local is newer — push it up.
           schedulePush();
@@ -114,7 +135,8 @@ export function SyncBridge() {
       if (applyingRemoteRef.current) return;
       if (
         state.routines === prev.routines &&
-        state.currentRoutineId === prev.currentRoutineId
+        state.currentRoutineId === prev.currentRoutineId &&
+        state.completions === prev.completions
       ) {
         return;
       }

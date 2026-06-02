@@ -9,6 +9,7 @@ const NAV = [
   { href: "/timer", label: "타이머" },
   { href: "/discover", label: "AI 추천" },
   { href: "/community", label: "커뮤니티" },
+  { href: "/history", label: "내 기록" },
   { href: "/advertise", label: "광고문의" },
 ];
 

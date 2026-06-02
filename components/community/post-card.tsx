@@ -70,6 +70,12 @@ export function PostCard({
           {post.title}
         </h3>
 
+        {post.description && (
+          <p className="text-[13px] text-foreground-muted leading-relaxed line-clamp-2">
+            {post.description}
+          </p>
+        )}
+
         <div className="flex items-center gap-3 text-[11px] text-foreground-dim">
           <span>{workRounds}개 라운드</span>
           <span>·</span>

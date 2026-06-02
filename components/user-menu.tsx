@@ -2,10 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useSyncStore, type SyncStatus } from "@/store/sync-store";
 import { Button } from "@/components/ui/button";
-import { LogOut, LogIn, Cloud, CloudOff, Loader2, Check } from "lucide-react";
+import {
+  LogOut,
+  LogIn,
+  Cloud,
+  CloudOff,
+  Loader2,
+  Check,
+  CalendarDays,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function UserMenu() {
@@ -102,6 +111,15 @@ export function UserMenu() {
             </div>
           </div>
           <SyncRow />
+          <Link
+            href="/history"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="w-full mt-1 flex items-center gap-2 px-3 h-10 rounded-xl text-[13px] text-foreground-muted hover:text-foreground hover:bg-surface-1 transition-colors"
+          >
+            <CalendarDays size={14} />
+            내 기록
+          </Link>
           <button
             type="button"
             role="menuitem"
@@ -109,7 +127,7 @@ export function UserMenu() {
               setOpen(false);
               void signOut();
             }}
-            className="w-full mt-1 flex items-center gap-2 px-3 h-10 rounded-xl text-[13px] text-foreground-muted hover:text-foreground hover:bg-surface-1 transition-colors"
+            className="w-full flex items-center gap-2 px-3 h-10 rounded-xl text-[13px] text-foreground-muted hover:text-foreground hover:bg-surface-1 transition-colors"
           >
             <LogOut size={14} />
             로그아웃
