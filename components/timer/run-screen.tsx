@@ -397,7 +397,8 @@ function FinishedScreen({
   const shown = hovered || savedRating || 0;
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col items-center justify-center text-center px-6 overflow-y-auto py-10">
+    <div className="fixed inset-0 z-50 bg-background overflow-y-auto overscroll-contain">
+      <div className="min-h-full flex flex-col items-center justify-center text-center px-6 pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))]">
       <motion.div
         initial={{ scale: 0.7, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
@@ -471,6 +472,7 @@ function FinishedScreen({
         >
           종료
         </button>
+      </div>
       </div>
     </div>
   );

@@ -122,22 +122,23 @@ export function PostDetailModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="relative w-full sm:max-w-3xl sm:my-12 bg-surface-1 border border-border-subtle sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl"
+        className="relative flex flex-col w-full sm:max-w-3xl max-h-[92dvh] sm:max-h-[88dvh] bg-surface-1 border border-border-subtle sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
           aria-label="닫기"
-          className="absolute right-3 top-3 z-10 h-9 w-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-foreground hover:bg-black/60 transition-colors"
+          className="absolute right-3 top-3 z-20 h-9 w-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-foreground hover:bg-black/60 transition-colors"
         >
           <X size={16} />
         </button>
 
+        <div className="overflow-y-auto overscroll-contain">
         {post.youtubeId && (
           <div className="relative aspect-video bg-black">
             <iframe
@@ -150,7 +151,7 @@ export function PostDetailModal({
           </div>
         )}
 
-        <div className="px-5 sm:px-8 py-6 flex flex-col gap-6">
+        <div className="px-5 sm:px-8 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] flex flex-col gap-6">
           <header className="flex items-start gap-3">
             <Avatar
               photo={post.authorPhotoURL}
@@ -288,6 +289,7 @@ export function PostDetailModal({
               </p>
             )}
           </section>
+        </div>
         </div>
       </div>
     </div>

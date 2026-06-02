@@ -1,6 +1,6 @@
 // MyPace service worker — offline shell + runtime caching.
 // Bump CACHE_VERSION to invalidate old caches on deploy.
-const CACHE_VERSION = "mypace-v1";
+const CACHE_VERSION = "mypace-v2";
 const PRECACHE = `${CACHE_VERSION}-precache`;
 const RUNTIME = `${CACHE_VERSION}-runtime`;
 
