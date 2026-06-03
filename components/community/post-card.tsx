@@ -14,8 +14,10 @@ export function PostCard({
   post: CommunityPost;
   onOpen: (id: string) => void;
 }) {
-  const totalSec = post.routine.totalDurationSec * post.routine.repeat;
-  const workRounds = post.routine.rounds.filter((r) => r.type === "work").length;
+  const routine = post.routine;
+  const totalSec = routine ? routine.totalDurationSec * routine.repeat : 0;
+  const workRounds =
+    routine?.rounds.filter((r) => r.type === "work").length ?? 0;
 
   return (
     <button

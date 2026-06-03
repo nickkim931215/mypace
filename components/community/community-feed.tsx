@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, Users, LogIn, Loader2 } from "lucide-react";
+import { Plus, Users, LogIn, Loader2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { subscribePosts, getPost } from "@/lib/community";
-import type { CommunityPost } from "@/lib/types";
+import type { CommunityPost, PostKind } from "@/lib/types";
 import { PostCard } from "./post-card";
+import { RecordPostCard } from "./record-post-card";
 import { PostDetailModal } from "./post-detail-modal";
 import { ShareModal } from "./share-modal";
+import { RecordShareModal } from "./record-share-modal";
+import { cn } from "@/lib/utils";
 
 export function CommunityFeed() {
   const { state, configured, signInGoogle } = useAuth();
@@ -23,6 +26,8 @@ export function CommunityFeed() {
   // A post opened from a notification deep-link that isn't in the recent feed.
   const [extraPost, setExtraPost] = useState<CommunityPost | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [recordShareOpen, setRecordShareOpen] = useState(false);
+  const [tab, setTab] = useState<PostKind>("routine");
 
   useEffect(() => {
     if (!canLoadFeed) return;
@@ -130,30 +135,48 @@ export function CommunityFeed() {
     );
   }
 
+  const routinePosts = posts.filter((p) => p.kind !== "record");
+  const recordPosts = posts.filter((p) => p.kind === "record");
+  const isRecord = tab === "record";
+  const visible = isRecord ? recordPosts : routinePosts;
+
   return (
     <>
+      {/* Tabs */}
+      <div className="flex items-center gap-1 p-1 rounded-full bg-surface-2 border border-border-subtle w-fit mb-5">
+        <TabButton active={!isRecord} onClick={() => setTab("routine")}>
+          루틴 {routinePosts.length > 0 && `(${routinePosts.length})`}
+        </TabButton>
+        <TabButton active={isRecord} onClick={() => setTab("record")}>
+          기록 {recordPosts.length > 0 && `(${recordPosts.length})`}
+        </TabButton>
+      </div>
+
       <div className="flex items-center justify-between gap-3 mb-6">
-        <div>
-          <h2 className="font-display text-xl sm:text-2xl font-semibold tracking-tight">
-            모두의 루틴
-          </h2>
-          <p className="text-[13px] text-foreground-muted">
-            {loading
-              ? "불러오는 중..."
-              : posts.length > 0
-                ? `${posts.length}개 루틴 공유됨`
-                : "아직 게시물이 없어요. 첫 게시물을 올려보세요."}
-          </p>
-        </div>
-        <Button
-          variant="primary"
-          size="md"
-          onClick={() => setShareOpen(true)}
-        >
-          <Plus size={15} />
-          <span className="hidden sm:inline">루틴 공유하기</span>
-          <span className="sm:hidden">공유</span>
-        </Button>
+        <p className="text-[13px] text-foreground-muted">
+          {loading
+            ? "불러오는 중..."
+            : isRecord
+              ? "다른 사람들의 운동 기록을 구경하고 응원해요."
+              : "마음에 드는 루틴은 한 번에 내 라이브러리로 가져오세요."}
+        </p>
+        {isRecord ? (
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setRecordShareOpen(true)}
+          >
+            <Trophy size={15} />
+            <span className="hidden sm:inline">기록 자랑하기</span>
+            <span className="sm:hidden">자랑</span>
+          </Button>
+        ) : (
+          <Button variant="primary" size="md" onClick={() => setShareOpen(true)}>
+            <Plus size={15} />
+            <span className="hidden sm:inline">루틴 공유하기</span>
+            <span className="sm:hidden">공유</span>
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -166,24 +189,58 @@ export function CommunityFeed() {
         <div className="flex justify-center py-20">
           <Loader2 size={20} className="animate-spin text-foreground-dim" />
         </div>
-      ) : posts.length === 0 ? (
+      ) : visible.length === 0 ? (
         <EmptyState
-          title="아직 비어있어요"
-          description="가장 먼저 루틴을 공유해보세요."
+          title={isRecord ? "아직 공유된 기록이 없어요" : "아직 비어있어요"}
+          description={
+            isRecord
+              ? "가장 먼저 내 운동 기록을 자랑해보세요."
+              : "가장 먼저 루틴을 공유해보세요."
+          }
         />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
-          {posts.map((p) => (
-            <PostCard key={p.id} post={p} onOpen={setOpenId} />
-          ))}
+          {visible.map((p) =>
+            p.kind === "record" ? (
+              <RecordPostCard key={p.id} post={p} onOpen={setOpenId} />
+            ) : (
+              <PostCard key={p.id} post={p} onOpen={setOpenId} />
+            ),
+          )}
         </div>
       )}
 
-      {openPost && (
-        <PostDetailModal post={openPost} onClose={closePost} />
-      )}
+      {openPost && <PostDetailModal post={openPost} onClose={closePost} />}
       {shareOpen && <ShareModal onClose={() => setShareOpen(false)} />}
+      {recordShareOpen && (
+        <RecordShareModal onClose={() => setRecordShareOpen(false)} />
+      )}
     </>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "h-9 px-4 rounded-full text-[13px] font-medium transition-colors",
+        active
+          ? "bg-accent text-background"
+          : "text-foreground-muted hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
   );
 }
 

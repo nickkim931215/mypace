@@ -9,10 +9,12 @@ import {
   Dumbbell,
   CalendarDays,
   CloudOff,
+  Trophy,
 } from "lucide-react";
 import { useTimerStore } from "@/store/timer-store";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
+import { RecordShareModal } from "@/components/community/record-share-modal";
 import { formatDuration, cn } from "@/lib/utils";
 import type { WorkoutCompletion } from "@/lib/types";
 
@@ -53,6 +55,9 @@ export function HistoryView() {
   // Store is localStorage-backed — gate on mount to avoid hydration mismatch.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  const [shareOpen, setShareOpen] = useState(false);
+  const signedIn = state.status === "signedIn";
 
   const today = useMemo(() => startOfDay(new Date()), []);
   const [cursor, setCursor] = useState(() => ({
@@ -159,6 +164,18 @@ export function HistoryView() {
         />
       </div>
 
+      {signedIn && !empty && (
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={() => setShareOpen(true)}
+          className="self-stretch sm:self-start"
+        >
+          <Trophy size={15} />
+          커뮤니티에 기록 자랑하기
+        </Button>
+      )}
+
       {/* Calendar */}
       <div className="card-premium p-5 sm:p-6">
         <div className="flex items-center justify-between mb-4">
@@ -262,6 +279,8 @@ export function HistoryView() {
           </ul>
         )}
       </div>
+
+      {shareOpen && <RecordShareModal onClose={() => setShareOpen(false)} />}
     </div>
   );
 }

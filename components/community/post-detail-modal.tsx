@@ -26,6 +26,7 @@ import {
   updatePost,
 } from "@/lib/community";
 import { BODY_PART_LABEL, type BodyPart } from "@/lib/ai-recommend";
+import { RecordCalendarCard } from "./record-calendar-card";
 import type { CommunityPost, PostComment } from "@/lib/types";
 import { formatDuration, cn } from "@/lib/utils";
 
@@ -157,6 +158,7 @@ export function PostDetailModal({
   }
 
   function onImport() {
+    if (!post.routine) return;
     importRoutine(post.routine);
     setImported(true);
     setTimeout(() => setImported(false), 2000);
@@ -220,7 +222,10 @@ export function PostDetailModal({
     }
   }
 
-  const totalSec = post.routine.totalDurationSec * post.routine.repeat;
+  const isRecord = post.kind === "record";
+  const totalSec = post.routine
+    ? post.routine.totalDurationSec * post.routine.repeat
+    : 0;
 
   // Group comments into one level of threads. `comments` arrives ordered by
   // createdAt asc, so both top-level and replies stay chronological.
@@ -323,32 +328,36 @@ export function PostDetailModal({
                 rows={4}
                 className="w-full bg-surface-2 border border-border-subtle rounded-xl px-4 py-3 text-[14px] leading-relaxed resize-y focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
               />
-              <input
-                value={editYoutube}
-                onChange={(e) => setEditYoutube(e.target.value)}
-                placeholder="YouTube URL (선택)"
-                className="w-full h-11 bg-surface-2 border border-border-subtle rounded-xl px-4 text-[13px] focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
-              />
-              <div className="flex flex-wrap gap-2">
-                {BODY_PARTS.map((part) => {
-                  const on = editBodyParts.includes(part);
-                  return (
-                    <button
-                      key={part}
-                      type="button"
-                      onClick={() => toggleEditBodyPart(part)}
-                      className={cn(
-                        "h-8 px-3 rounded-full border text-[12px] transition-colors",
-                        on
-                          ? "border-accent/50 bg-accent/15 text-accent"
-                          : "border-border-subtle bg-surface-2 text-foreground-muted hover:border-border-strong",
-                      )}
-                    >
-                      {BODY_PART_LABEL[part]}
-                    </button>
-                  );
-                })}
-              </div>
+              {!isRecord && (
+                <>
+                  <input
+                    value={editYoutube}
+                    onChange={(e) => setEditYoutube(e.target.value)}
+                    placeholder="YouTube URL (선택)"
+                    className="w-full h-11 bg-surface-2 border border-border-subtle rounded-xl px-4 text-[13px] focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {BODY_PARTS.map((part) => {
+                      const on = editBodyParts.includes(part);
+                      return (
+                        <button
+                          key={part}
+                          type="button"
+                          onClick={() => toggleEditBodyPart(part)}
+                          className={cn(
+                            "h-8 px-3 rounded-full border text-[12px] transition-colors",
+                            on
+                              ? "border-accent/50 bg-accent/15 text-accent"
+                              : "border-border-subtle bg-surface-2 text-foreground-muted hover:border-border-strong",
+                          )}
+                        >
+                          {BODY_PART_LABEL[part]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
               <div className="flex items-center gap-2">
                 <Button
                   variant="primary"
@@ -394,19 +403,27 @@ export function PostDetailModal({
             </div>
           )}
 
-          <RoutinePreview routine={post.routine} totalSec={totalSec} />
+          {isRecord && post.record ? (
+            <RecordCalendarCard record={post.record} />
+          ) : (
+            post.routine && (
+              <RoutinePreview routine={post.routine} totalSec={totalSec} />
+            )
+          )}
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button
-              variant="primary"
-              size="md"
-              onClick={onImport}
-              disabled={!user}
-              title={!user ? "로그인이 필요합니다" : undefined}
-            >
-              <Download size={15} />
-              {imported ? "내 루틴에 추가됨" : "내 루틴으로 가져오기"}
-            </Button>
+            {!isRecord && post.routine && (
+              <Button
+                variant="primary"
+                size="md"
+                onClick={onImport}
+                disabled={!user}
+                title={!user ? "로그인이 필요합니다" : undefined}
+              >
+                <Download size={15} />
+                {imported ? "내 루틴에 추가됨" : "내 루틴으로 가져오기"}
+              </Button>
+            )}
             <button
               type="button"
               onClick={onToggleLike}
@@ -554,7 +571,7 @@ function RoutinePreview({
   routine,
   totalSec,
 }: {
-  routine: CommunityPost["routine"];
+  routine: NonNullable<CommunityPost["routine"]>;
   totalSec: number;
 }) {
   return (

@@ -37,8 +37,27 @@ export interface WorkoutCompletion {
   durationSec: number; // planned total for the routine (rounds × repeat)
 }
 
+// A frozen snapshot of a user's workout history at share time, so a shared
+// "record" post keeps showing the same calendar/streak even as the user keeps
+// working out afterwards.
+export interface RecordSnapshot {
+  streak: number; // consecutive-day streak at share time
+  weekCount: number; // completions so far this week
+  totalCount: number; // lifetime completions
+  year: number;
+  month: number; // 0-indexed, matches Date.getMonth()
+  monthLabel: string; // e.g. "2026년 6월"
+  monthCount: number; // completions in that month
+  days: number[]; // day-of-month numbers (1–31) that had ≥1 completion
+}
+
+export type PostKind = "routine" | "record";
+
 export interface CommunityPost {
   id: string;
+  // "routine" = shared workout routine (default for legacy posts).
+  // "record" = shared history calendar/streak brag.
+  kind: PostKind;
   authorId: string;
   authorName: string;
   authorPhotoURL: string | null;
@@ -50,7 +69,10 @@ export interface CommunityPost {
   // Target body parts (BodyPart keys, e.g. "core"/"legs"). Optional — older
   // posts predate this field. Powers the compact card summary.
   bodyParts: string[];
-  routine: Routine;
+  // Present on routine posts.
+  routine?: Routine;
+  // Present on record posts.
+  record?: RecordSnapshot;
   likeCount: number;
   commentCount: number;
   createdAt: number;

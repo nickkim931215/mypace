@@ -19,7 +19,12 @@ import {
 } from "firebase/firestore";
 import { getDb } from "@/firebase/config";
 import { createNotification } from "@/lib/notifications";
-import type { CommunityPost, PostComment, Routine } from "@/lib/types";
+import type {
+  CommunityPost,
+  PostComment,
+  RecordSnapshot,
+  Routine,
+} from "@/lib/types";
 
 const POSTS = "posts";
 
@@ -65,6 +70,7 @@ function fromDoc(snap: QueryDocumentSnapshot<DocumentData>): CommunityPost {
   const d = snap.data();
   return {
     id: snap.id,
+    kind: d.kind === "record" ? "record" : "routine",
     authorId: d.authorId,
     authorName: d.authorName ?? "익명",
     authorPhotoURL: d.authorPhotoURL ?? null,
@@ -73,7 +79,8 @@ function fromDoc(snap: QueryDocumentSnapshot<DocumentData>): CommunityPost {
     youtubeUrl: d.youtubeUrl ?? null,
     youtubeId: d.youtubeId ?? null,
     bodyParts: Array.isArray(d.bodyParts) ? d.bodyParts : [],
-    routine: d.routine as Routine,
+    routine: d.routine ? (d.routine as Routine) : undefined,
+    record: d.record ? (d.record as RecordSnapshot) : undefined,
     likeCount: typeof d.likeCount === "number" ? d.likeCount : 0,
     commentCount: typeof d.commentCount === "number" ? d.commentCount : 0,
     createdAt:
@@ -121,6 +128,7 @@ export async function createPost(input: CreatePostInput): Promise<string> {
     ? extractYoutubeId(input.youtubeUrl)
     : null;
   const ref = await addDoc(postsCol(), {
+    kind: "routine",
     authorId: input.authorId,
     authorName: input.authorName,
     authorPhotoURL: input.authorPhotoURL,
@@ -130,6 +138,39 @@ export async function createPost(input: CreatePostInput): Promise<string> {
     youtubeId,
     bodyParts: input.bodyParts,
     routine: input.routine,
+    likeCount: 0,
+    commentCount: 0,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export interface CreateRecordPostInput {
+  authorId: string;
+  authorName: string;
+  authorPhotoURL: string | null;
+  title: string;
+  description: string;
+  record: RecordSnapshot;
+}
+
+// Share a workout-history snapshot ("brag") to the community. Uses the same
+// /posts collection (so likes/comments/notifications all work unchanged); the
+// create rule only checks authorId + zeroed counts, so no rules change needed.
+export async function createRecordPost(
+  input: CreateRecordPostInput,
+): Promise<string> {
+  const ref = await addDoc(postsCol(), {
+    kind: "record",
+    authorId: input.authorId,
+    authorName: input.authorName,
+    authorPhotoURL: input.authorPhotoURL,
+    title: input.title.trim(),
+    description: input.description.trim(),
+    youtubeUrl: null,
+    youtubeId: null,
+    bodyParts: [],
+    record: input.record,
     likeCount: 0,
     commentCount: 0,
     createdAt: serverTimestamp(),
