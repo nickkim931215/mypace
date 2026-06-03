@@ -44,3 +44,8 @@ next-env.d.ts
 
 # Claude Code local harness files
 .claude/
+
+# Firebase debug logs
+firebase-debug.log
+firestore-debug.log
+*-debug.log

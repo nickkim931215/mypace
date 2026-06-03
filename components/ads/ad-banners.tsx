@@ -14,15 +14,18 @@ export function AdBanners() {
   for (const b of AD_BANNERS) bySlot.set(b.slot, b);
 
   return (
-    <section className="mx-auto max-w-6xl px-5 sm:px-8 py-20 sm:py-24">
-      <div className="flex items-end justify-between gap-4 mb-8 sm:mb-10">
+    <section className="mx-auto max-w-6xl px-5 sm:px-8 pt-6 pb-16 sm:pt-10 sm:pb-24">
+      <div className="flex items-end justify-between gap-4 mb-6 sm:mb-8">
         <div>
-          <span className="text-[11px] uppercase tracking-[0.2em] text-foreground-dim">
+          <span className="text-[11px] uppercase tracking-[0.2em] text-accent">
             Featured
           </span>
-          <h2 className="mt-2 font-display text-2xl sm:text-3xl tracking-[-0.02em] font-semibold">
+          <h2 className="mt-2 font-display text-2xl sm:text-4xl tracking-[-0.02em] font-semibold">
             지금 인기 운동 채널
           </h2>
+          <p className="mt-2 text-[13px] sm:text-sm text-foreground-muted">
+            트레이너·크리에이터의 운동 채널을 만나보세요.
+          </p>
         </div>
         <Link
           href="/advertise"

@@ -1,29 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/user-menu";
+import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/timer", label: "타이머" },
-  { href: "/discover", label: "AI 추천" },
-  { href: "/community", label: "커뮤니티" },
-  { href: "/history", label: "내 기록" },
-  { href: "/advertise", label: "광고문의" },
+  { href: "/timer", label: "타이머", short: "타이머" },
+  { href: "/discover", label: "AI 추천", short: "AI추천" },
+  { href: "/community", label: "커뮤니티", short: "커뮤니티" },
+  { href: "/history", label: "내 기록", short: "내기록" },
+  { href: "/advertise", label: "광고문의", short: "광고문의" },
 ];
 
 export function SiteHeader() {
-  const [open, setOpen] = useState(false);
   const pathname = usePathname();
-
-  // Close the mobile menu whenever the route changes.
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + "/");
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border-subtle pt-[env(safe-area-inset-top)]">
@@ -36,7 +31,12 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="px-4 h-9 inline-flex items-center text-sm text-foreground-muted hover:text-foreground transition-colors rounded-full"
+              className={cn(
+                "px-4 h-9 inline-flex items-center text-sm transition-colors rounded-full",
+                isActive(item.href)
+                  ? "text-foreground"
+                  : "text-foreground-muted hover:text-foreground",
+              )}
             >
               {item.label}
             </Link>
@@ -49,32 +49,27 @@ export function SiteHeader() {
             </Button>
           </Link>
           <UserMenu />
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-label="메뉴"
-            aria-expanded={open}
-            className="md:hidden h-9 w-9 rounded-full hover:bg-surface-1 flex items-center justify-center text-foreground-muted transition-colors"
-          >
-            {open ? <X size={20} /> : <Menu size={20} />}
-          </button>
         </div>
       </div>
 
-      {open && (
-        <nav className="md:hidden border-t border-border-subtle bg-background/95 backdrop-blur-xl px-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))] pb-3 pt-1">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className="flex items-center px-3 h-12 text-[15px] text-foreground-muted hover:text-foreground hover:bg-surface-1 rounded-xl transition-colors"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      )}
+      {/* Mobile inline nav — all destinations visible in one tappable row so
+          phone users can jump between pages without opening a menu. */}
+      <nav className="md:hidden flex items-stretch border-t border-border-subtle px-[max(0.25rem,env(safe-area-inset-left))] pr-[max(0.25rem,env(safe-area-inset-right))]">
+        {NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex-1 min-w-0 h-11 flex items-center justify-center text-center text-[12px] whitespace-nowrap transition-colors relative",
+              isActive(item.href)
+                ? "text-accent font-medium after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:h-0.5 after:w-5 after:rounded-full after:bg-accent"
+                : "text-foreground-muted hover:text-foreground",
+            )}
+          >
+            {item.short}
+          </Link>
+        ))}
+      </nav>
     </header>
   );
 }

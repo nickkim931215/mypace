@@ -12,6 +12,7 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
+  updateDoc,
   type DocumentData,
   type QueryDocumentSnapshot,
   type Unsubscribe,
@@ -136,6 +137,31 @@ export async function deletePost(id: string): Promise<void> {
   await deleteDoc(postDoc(id));
 }
 
+export interface UpdatePostInput {
+  title: string;
+  description: string;
+  youtubeUrl: string | null;
+}
+
+// Author-only edit of the post's text/video fields. The routine itself isn't
+// editable here — re-share if you want to change the workout. Firestore rules
+// gate this to the post's author and to these four keys only, so counts and
+// authorId can't be touched through this path.
+export async function updatePost(
+  id: string,
+  input: UpdatePostInput,
+): Promise<void> {
+  const youtubeId = input.youtubeUrl
+    ? extractYoutubeId(input.youtubeUrl)
+    : null;
+  await updateDoc(postDoc(id), {
+    title: input.title.trim(),
+    description: input.description.trim(),
+    youtubeUrl: input.youtubeUrl,
+    youtubeId,
+  });
+}
+
 // ── comments ──────────────────────────────────────────────────────────
 
 function commentFromDoc(
@@ -194,6 +220,19 @@ export async function addComment(input: AddCommentInput): Promise<void> {
       createdAt: serverTimestamp(),
     });
     tx.update(postDoc(input.postId), { commentCount: increment(1) });
+  });
+}
+
+// Delete one comment and keep the post's commentCount in sync. Firestore rules
+// only allow deleting a comment whose authorId matches the caller, so this is
+// safe to expose to any signed-in user — non-authors just get permission-denied.
+export async function deleteComment(
+  postId: string,
+  commentId: string,
+): Promise<void> {
+  await runTransaction(getDb(), async (tx) => {
+    tx.delete(doc(commentsCol(postId), commentId));
+    tx.update(postDoc(postId), { commentCount: increment(-1) });
   });
 }
 

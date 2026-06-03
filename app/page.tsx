@@ -10,8 +10,8 @@ export default function Home() {
       <SiteHeader />
       <main className="flex-1">
         <Hero />
-        <FeatureGrid />
         <AdBanners />
+        <FeatureGrid />
       </main>
       <SiteFooter />
     </>

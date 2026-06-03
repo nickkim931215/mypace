@@ -7,6 +7,7 @@ import {
   Heart,
   Download,
   Trash2,
+  Pencil,
   Send,
   Loader2,
   Dumbbell,
@@ -17,10 +18,12 @@ import { useAuth } from "@/lib/auth-context";
 import { useTimerStore } from "@/store/timer-store";
 import {
   addComment,
+  deleteComment,
   deletePost,
   subscribeComments,
   subscribeMyLike,
   toggleLike,
+  updatePost,
 } from "@/lib/community";
 import type { CommunityPost, PostComment } from "@/lib/types";
 import { formatDuration, cn } from "@/lib/utils";
@@ -42,6 +45,16 @@ export function PostDetailModal({
   const [busyLike, setBusyLike] = useState(false);
   const [imported, setImported] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(
+    null,
+  );
+
+  // Inline post-edit state (owner only).
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(post.title);
+  const [editDesc, setEditDesc] = useState(post.description);
+  const [editYoutube, setEditYoutube] = useState(post.youtubeUrl ?? "");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const unsub = subscribeComments(post.id, setComments);
@@ -116,6 +129,44 @@ export function PostDetailModal({
     }
   }
 
+  function startEdit() {
+    setEditTitle(post.title);
+    setEditDesc(post.description);
+    setEditYoutube(post.youtubeUrl ?? "");
+    setEditing(true);
+  }
+
+  async function onSaveEdit() {
+    const title = editTitle.trim();
+    if (!title || saving) return;
+    setSaving(true);
+    try {
+      await updatePost(post.id, {
+        title,
+        description: editDesc,
+        youtubeUrl: editYoutube.trim() || null,
+      });
+      setEditing(false);
+    } catch (err) {
+      console.error("[community] updatePost failed:", err);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onDeleteComment(commentId: string) {
+    if (deletingCommentId) return;
+    if (!confirm("이 댓글을 삭제할까요?")) return;
+    setDeletingCommentId(commentId);
+    try {
+      await deleteComment(post.id, commentId);
+    } catch (err) {
+      console.error("[community] deleteComment failed:", err);
+    } finally {
+      setDeletingCommentId(null);
+    }
+  }
+
   const totalSec = post.routine.totalDurationSec * post.routine.repeat;
 
   return (
@@ -164,33 +215,88 @@ export function PostDetailModal({
                 {new Date(post.createdAt).toLocaleString("ko-KR")}
               </p>
             </div>
-            {isOwner && (
-              <button
-                type="button"
-                onClick={onDelete}
-                disabled={deleting}
-                aria-label="삭제"
-                className="h-9 w-9 rounded-full hover:bg-surface-2 text-foreground-dim hover:text-danger transition-colors flex items-center justify-center disabled:opacity-50"
-              >
-                {deleting ? (
-                  <Loader2 size={15} className="animate-spin" />
-                ) : (
-                  <Trash2 size={15} />
-                )}
-              </button>
+            {isOwner && !editing && (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={startEdit}
+                  aria-label="수정"
+                  className="h-9 w-9 rounded-full hover:bg-surface-2 text-foreground-dim hover:text-foreground transition-colors flex items-center justify-center"
+                >
+                  <Pencil size={15} />
+                </button>
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  disabled={deleting}
+                  aria-label="삭제"
+                  className="h-9 w-9 rounded-full hover:bg-surface-2 text-foreground-dim hover:text-danger transition-colors flex items-center justify-center disabled:opacity-50"
+                >
+                  {deleting ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={15} />
+                  )}
+                </button>
+              </div>
             )}
           </header>
 
-          <div>
-            <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
-              {post.title}
-            </h2>
-            {post.description && (
-              <p className="mt-3 text-[14px] text-foreground-muted leading-relaxed whitespace-pre-wrap">
-                {post.description}
-              </p>
-            )}
-          </div>
+          {editing ? (
+            <div className="flex flex-col gap-3">
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="제목"
+                maxLength={80}
+                className="w-full h-11 bg-surface-2 border border-border-subtle rounded-xl px-4 text-[15px] font-medium focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
+              />
+              <textarea
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                placeholder="설명 (선택)"
+                maxLength={1000}
+                rows={4}
+                className="w-full bg-surface-2 border border-border-subtle rounded-xl px-4 py-3 text-[14px] leading-relaxed resize-y focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
+              />
+              <input
+                value={editYoutube}
+                onChange={(e) => setEditYoutube(e.target.value)}
+                placeholder="YouTube URL (선택)"
+                className="w-full h-11 bg-surface-2 border border-border-subtle rounded-xl px-4 text-[13px] focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
+              />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={onSaveEdit}
+                  disabled={!editTitle.trim() || saving}
+                >
+                  {saving && <Loader2 size={15} className="animate-spin" />}
+                  저장
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  disabled={saving}
+                  className="h-11 px-4 rounded-full text-[13px] text-foreground-muted hover:text-foreground hover:bg-surface-2 transition-colors disabled:opacity-50"
+                >
+                  취소
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
+                {post.title}
+              </h2>
+              {post.description && (
+                <p className="mt-3 text-[14px] text-foreground-muted leading-relaxed whitespace-pre-wrap">
+                  {post.description}
+                </p>
+              )}
+            </div>
+          )}
 
           <RoutinePreview routine={post.routine} totalSec={totalSec} />
 
@@ -231,7 +337,7 @@ export function PostDetailModal({
             </h3>
             <ul className="flex flex-col gap-3">
               {comments.map((c) => (
-                <li key={c.id} className="flex items-start gap-2.5">
+                <li key={c.id} className="group flex items-start gap-2.5">
                   <Avatar
                     photo={c.authorPhotoURL}
                     name={c.authorName}
@@ -248,6 +354,21 @@ export function PostDetailModal({
                       {c.text}
                     </p>
                   </div>
+                  {user?.uid === c.authorId && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteComment(c.id)}
+                      disabled={deletingCommentId === c.id}
+                      aria-label="댓글 삭제"
+                      className="shrink-0 h-7 w-7 rounded-full text-foreground-dim hover:text-danger hover:bg-danger/10 transition-colors flex items-center justify-center disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+                    >
+                      {deletingCommentId === c.id ? (
+                        <Loader2 size={13} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={13} />
+                      )}
+                    </button>
+                  )}
                 </li>
               ))}
               {comments.length === 0 && (

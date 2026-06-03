@@ -24,13 +24,27 @@ service cloud.firestore {
       allow delete: if request.auth != null
                     && resource.data.authorId == request.auth.uid;
 
-      // Allow counter bumps from any signed-in user (the comment / like
-      // transactions need this). Restrict to only the count fields so a
-      // malicious client can't rewrite the post body.
+      // Two kinds of update are allowed:
+      //  (a) counter bumps from ANY signed-in user — the comment / like
+      //      transactions need this. Restricted to only the count fields so a
+      //      malicious client can't rewrite the post body via this path.
+      //  (b) the post's AUTHOR editing their own text/video fields. authorId
+      //      and the counts are deliberately excluded from the allowed keys, so
+      //      an author can't relabel ownership or inflate likes while editing.
       allow update: if request.auth != null
-                    && request.resource.data.diff(resource.data)
-                         .affectedKeys()
-                         .hasOnly(['likeCount', 'commentCount']);
+                    && (
+                      request.resource.data.diff(resource.data)
+                        .affectedKeys()
+                        .hasOnly(['likeCount', 'commentCount'])
+                      || (
+                        resource.data.authorId == request.auth.uid
+                        && request.resource.data.authorId == request.auth.uid
+                        && request.resource.data.diff(resource.data)
+                             .affectedKeys()
+                             .hasOnly(['title', 'description',
+                                       'youtubeUrl', 'youtubeId'])
+                      )
+                    );
 
       // Comments — anyone signed in can read & add; only the comment's
       // author can delete their own comment.

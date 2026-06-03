@@ -72,12 +72,12 @@ export function RoundCard({ round, onChange, onDuplicate, onRemove }: Props) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "card-premium p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4",
+        "card-premium p-3 sm:p-5 flex flex-wrap sm:flex-nowrap items-center gap-x-2 gap-y-2.5 sm:gap-4",
         "transition-shadow",
         isDragging && "ring-1 ring-accent/40 shadow-2xl z-10",
       )}
     >
-      {/* Drag handle */}
+      {/* Drag handle (desktop only) */}
       <button
         {...attributes}
         {...listeners}
@@ -87,33 +87,20 @@ export function RoundCard({ round, onChange, onDuplicate, onRemove }: Props) {
         <GripVertical size={18} />
       </button>
 
-      {/* Type badge */}
-      <div className="flex items-center gap-3 sm:gap-4">
-        <div
-          className={cn(
-            "h-11 w-11 shrink-0 rounded-2xl flex items-center justify-center ring-1",
-            meta.bg,
-            meta.color,
-            meta.ring,
-          )}
-        >
-          <Icon size={18} />
-        </div>
-        <select
-          value={round.type}
-          onChange={(e) =>
-            onChange({ type: e.target.value as RoundType })
-          }
-          className="sm:hidden h-9 px-3 rounded-full bg-surface-2 border border-border-subtle text-xs text-foreground"
-        >
-          <option value="work">운동</option>
-          <option value="rest">휴식</option>
-          <option value="prepare">준비</option>
-        </select>
+      {/* Type icon */}
+      <div
+        className={cn(
+          "h-9 w-9 sm:h-11 sm:w-11 shrink-0 rounded-xl sm:rounded-2xl flex items-center justify-center ring-1",
+          meta.bg,
+          meta.color,
+          meta.ring,
+        )}
+      >
+        <Icon size={17} />
       </div>
 
-      {/* Name + type (desktop) */}
-      <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+      {/* Name + type (desktop select sits inline; mobile select drops to row 2) */}
+      <div className="flex-1 min-w-[120px] flex items-center gap-2 sm:gap-3">
         <input
           value={round.name}
           onChange={(e) => onChange({ name: e.target.value })}
@@ -122,9 +109,7 @@ export function RoundCard({ round, onChange, onDuplicate, onRemove }: Props) {
         />
         <select
           value={round.type}
-          onChange={(e) =>
-            onChange({ type: e.target.value as RoundType })
-          }
+          onChange={(e) => onChange({ type: e.target.value as RoundType })}
           className="hidden sm:block h-8 px-3 rounded-full bg-surface-2 border border-border-subtle text-[12px] text-foreground-muted"
         >
           <option value="work">운동</option>
@@ -133,8 +118,19 @@ export function RoundCard({ round, onChange, onDuplicate, onRemove }: Props) {
         </select>
       </div>
 
+      {/* Type select (mobile only) */}
+      <select
+        value={round.type}
+        onChange={(e) => onChange({ type: e.target.value as RoundType })}
+        className="sm:hidden h-9 px-2.5 rounded-full bg-surface-2 border border-border-subtle text-xs text-foreground"
+      >
+        <option value="work">운동</option>
+        <option value="rest">휴식</option>
+        <option value="prepare">준비</option>
+      </select>
+
       {/* Duration stepper */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 sm:gap-2">
         <button
           onClick={() =>
             onChange({
@@ -146,7 +142,7 @@ export function RoundCard({ round, onChange, onDuplicate, onRemove }: Props) {
         >
           <Minus size={14} />
         </button>
-        <div className="tabular text-[15px] font-semibold text-foreground min-w-[64px] text-center">
+        <div className="tabular text-[15px] font-semibold text-foreground min-w-[56px] sm:min-w-[64px] text-center">
           {round.durationSec}
           <span className="text-foreground-dim text-[12px] ml-1">초</span>
         </div>
@@ -165,7 +161,7 @@ export function RoundCard({ round, onChange, onDuplicate, onRemove }: Props) {
 
       {/* BPM for work rounds */}
       {round.type === "work" && (
-        <div className="flex items-center gap-2 pl-3 sm:border-l sm:border-border-subtle">
+        <div className="flex items-center gap-2 sm:pl-3 sm:border-l sm:border-border-subtle">
           <span className="text-[11px] uppercase tracking-[0.16em] text-foreground-dim">
             BPM
           </span>
@@ -186,7 +182,7 @@ export function RoundCard({ round, onChange, onDuplicate, onRemove }: Props) {
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 ml-auto sm:ml-0">
         <button
           onClick={onDuplicate}
           className="h-9 w-9 rounded-full text-foreground-dim hover:text-foreground hover:bg-surface-2 flex items-center justify-center transition-colors"

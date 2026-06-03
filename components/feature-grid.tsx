@@ -45,12 +45,12 @@ const features = [
 
 export function FeatureGrid() {
   return (
-    <section className="mx-auto max-w-6xl px-5 sm:px-8 py-20 sm:py-28">
-      <div className="flex flex-col items-center text-center mb-12 sm:mb-16">
+    <section className="mx-auto max-w-6xl px-5 sm:px-8 py-14 sm:py-20 border-t border-border-subtle">
+      <div className="flex flex-col items-center text-center mb-8 sm:mb-10">
         <span className="text-[11px] uppercase tracking-[0.2em] text-foreground-dim">
           What's inside
         </span>
-        <h2 className="mt-3 font-display text-3xl sm:text-5xl tracking-[-0.03em] font-semibold">
+        <h2 className="mt-2 font-display text-2xl sm:text-3xl tracking-[-0.02em] font-semibold">
           하나의 앱, 운동의 모든 박자
         </h2>
       </div>
@@ -63,20 +63,20 @@ export function FeatureGrid() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.5, delay: i * 0.06 }}
-            className="card-premium p-6 sm:p-7 hover:translate-y-[-2px] transition-transform"
+            className="card-premium p-5 hover:translate-y-[-2px] transition-transform"
           >
             <div
               className={cn(
-                "h-11 w-11 rounded-2xl bg-surface-2 flex items-center justify-center",
+                "h-9 w-9 rounded-xl bg-surface-2 flex items-center justify-center",
                 f.accent,
               )}
             >
-              <f.icon size={20} />
+              <f.icon size={18} />
             </div>
-            <h3 className="mt-5 text-[17px] font-semibold tracking-tight">
+            <h3 className="mt-4 text-[15px] font-semibold tracking-tight">
               {f.title}
             </h3>
-            <p className="mt-2 text-sm text-foreground-muted leading-relaxed">
+            <p className="mt-1.5 text-[13px] text-foreground-muted leading-relaxed">
               {f.desc}
             </p>
           </motion.div>
