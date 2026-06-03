@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Users, LogIn, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
-import { subscribePosts } from "@/lib/community";
+import { subscribePosts, getPost } from "@/lib/community";
 import type { CommunityPost } from "@/lib/types";
 import { PostCard } from "./post-card";
 import { PostDetailModal } from "./post-detail-modal";
@@ -20,6 +20,8 @@ export function CommunityFeed() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+  // A post opened from a notification deep-link that isn't in the recent feed.
+  const [extraPost, setExtraPost] = useState<CommunityPost | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
@@ -38,12 +40,53 @@ export function CommunityFeed() {
     return unsub;
   }, [canLoadFeed]);
 
+  // Deep-link: open a specific post when arriving via /community?post=<id>
+  // (e.g. clicking a notification). Read on mount, client-side only.
+  useEffect(() => {
+    const pid = new URLSearchParams(window.location.search).get("post");
+    if (pid) setOpenId(pid);
+  }, []);
+
+  // When already on /community, the notification click can't remount us, so it
+  // fires a window event we listen for here.
+  useEffect(() => {
+    function onOpen(e: Event) {
+      const id = (e as CustomEvent).detail as string;
+      if (id) setOpenId(id);
+    }
+    window.addEventListener("mypace:open-post", onOpen);
+    return () => window.removeEventListener("mypace:open-post", onOpen);
+  }, []);
+
+  // Fetch the target post if it isn't already in the loaded feed page.
+  useEffect(() => {
+    if (!openId || !canLoadFeed) return;
+    if (posts.some((p) => p.id === openId)) return;
+    let cancelled = false;
+    void getPost(openId)
+      .then((p) => {
+        if (!cancelled) setExtraPost(p);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [openId, posts, canLoadFeed]);
+
   const loading = canLoadFeed && !loaded;
 
-  const openPost = useMemo(
-    () => (openId ? posts.find((p) => p.id === openId) : null),
-    [openId, posts],
-  );
+  const openPost = openId
+    ? posts.find((p) => p.id === openId) ??
+      (extraPost?.id === openId ? extraPost : null)
+    : null;
+
+  function closePost() {
+    setOpenId(null);
+    setExtraPost(null);
+    if (window.location.search) {
+      window.history.replaceState(null, "", "/community");
+    }
+  }
 
   if (!configured) {
     return (
@@ -129,7 +172,7 @@ export function CommunityFeed() {
           description="가장 먼저 루틴을 공유해보세요."
         />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
           {posts.map((p) => (
             <PostCard key={p.id} post={p} onOpen={setOpenId} />
           ))}
@@ -137,7 +180,7 @@ export function CommunityFeed() {
       )}
 
       {openPost && (
-        <PostDetailModal post={openPost} onClose={() => setOpenId(null)} />
+        <PostDetailModal post={openPost} onClose={closePost} />
       )}
       {shareOpen && <ShareModal onClose={() => setShareOpen(false)} />}
     </>

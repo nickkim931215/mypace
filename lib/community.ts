@@ -18,6 +18,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { getDb } from "@/firebase/config";
+import { createNotification } from "@/lib/notifications";
 import type { CommunityPost, PostComment, Routine } from "@/lib/types";
 
 const POSTS = "posts";
@@ -71,6 +72,7 @@ function fromDoc(snap: QueryDocumentSnapshot<DocumentData>): CommunityPost {
     description: d.description ?? "",
     youtubeUrl: d.youtubeUrl ?? null,
     youtubeId: d.youtubeId ?? null,
+    bodyParts: Array.isArray(d.bodyParts) ? d.bodyParts : [],
     routine: d.routine as Routine,
     likeCount: typeof d.likeCount === "number" ? d.likeCount : 0,
     commentCount: typeof d.commentCount === "number" ? d.commentCount : 0,
@@ -110,6 +112,7 @@ export interface CreatePostInput {
   title: string;
   description: string;
   youtubeUrl: string | null;
+  bodyParts: string[];
   routine: Routine;
 }
 
@@ -125,6 +128,7 @@ export async function createPost(input: CreatePostInput): Promise<string> {
     description: input.description.trim(),
     youtubeUrl: input.youtubeUrl,
     youtubeId,
+    bodyParts: input.bodyParts,
     routine: input.routine,
     likeCount: 0,
     commentCount: 0,
@@ -141,12 +145,13 @@ export interface UpdatePostInput {
   title: string;
   description: string;
   youtubeUrl: string | null;
+  bodyParts: string[];
 }
 
-// Author-only edit of the post's text/video fields. The routine itself isn't
-// editable here — re-share if you want to change the workout. Firestore rules
-// gate this to the post's author and to these four keys only, so counts and
-// authorId can't be touched through this path.
+// Author-only edit of the post's text/video/body-part fields. The routine
+// itself isn't editable here — re-share if you want to change the workout.
+// Firestore rules gate this to the post's author and to these keys only, so
+// counts and authorId can't be touched through this path.
 export async function updatePost(
   id: string,
   input: UpdatePostInput,
@@ -159,6 +164,7 @@ export async function updatePost(
     description: input.description.trim(),
     youtubeUrl: input.youtubeUrl,
     youtubeId,
+    bodyParts: input.bodyParts,
   });
 }
 
@@ -174,6 +180,7 @@ function commentFromDoc(
     authorName: d.authorName ?? "익명",
     authorPhotoURL: d.authorPhotoURL ?? null,
     text: d.text ?? "",
+    parentId: d.parentId ?? null,
     createdAt:
       typeof d.createdAt === "number"
         ? d.createdAt
@@ -199,10 +206,16 @@ export function subscribeComments(
 
 export interface AddCommentInput {
   postId: string;
+  postTitle: string;
   authorId: string;
   authorName: string;
   authorPhotoURL: string | null;
   text: string;
+  // Set for a reply — the comment being replied to.
+  parentId?: string | null;
+  // Who to notify: the post author for a top-level comment, or the parent
+  // comment's author for a reply. Skipped automatically if it equals authorId.
+  recipientId: string;
 }
 
 export async function addComment(input: AddCommentInput): Promise<void> {
@@ -217,10 +230,23 @@ export async function addComment(input: AddCommentInput): Promise<void> {
       authorName: input.authorName,
       authorPhotoURL: input.authorPhotoURL,
       text: trimmed,
+      parentId: input.parentId ?? null,
       createdAt: serverTimestamp(),
     });
     tx.update(postDoc(input.postId), { commentCount: increment(1) });
   });
+
+  // Fire-and-forget notification to the post / parent-comment author.
+  void createNotification({
+    recipientId: input.recipientId,
+    type: input.parentId ? "reply" : "comment",
+    postId: input.postId,
+    postTitle: input.postTitle,
+    actorId: input.authorId,
+    actorName: input.authorName,
+    actorPhotoURL: input.authorPhotoURL,
+    preview: trimmed,
+  }).catch((e) => console.error("[community] comment notify failed:", e));
 }
 
 // Delete one comment and keep the post's commentCount in sync. Firestore rules
@@ -250,18 +276,45 @@ export function subscribeMyLike(
   );
 }
 
-export async function toggleLike(postId: string, uid: string): Promise<void> {
+export interface LikeNotifyMeta {
+  postTitle: string;
+  recipientId: string;
+  actorName: string;
+  actorPhotoURL: string | null;
+}
+
+export async function toggleLike(
+  postId: string,
+  uid: string,
+  notify?: LikeNotifyMeta,
+): Promise<void> {
+  let didLike = false;
   await runTransaction(getDb(), async (tx) => {
     const ref = likeDoc(postId, uid);
     const snap = await tx.get(ref);
     if (snap.exists()) {
       tx.delete(ref);
       tx.update(postDoc(postId), { likeCount: increment(-1) });
+      didLike = false;
     } else {
       tx.set(ref, { createdAt: serverTimestamp() });
       tx.update(postDoc(postId), { likeCount: increment(1) });
+      didLike = true;
     }
   });
+
+  // Only notify on a fresh like (not on unlike), fire-and-forget.
+  if (didLike && notify) {
+    void createNotification({
+      recipientId: notify.recipientId,
+      type: "like",
+      postId,
+      postTitle: notify.postTitle,
+      actorId: uid,
+      actorName: notify.actorName,
+      actorPhotoURL: notify.actorPhotoURL,
+    }).catch((e) => console.error("[community] like notify failed:", e));
+  }
 }
 
 // Re-export so callers don't need to import setDoc directly when seeding.

@@ -25,8 +25,11 @@ import {
   toggleLike,
   updatePost,
 } from "@/lib/community";
+import { BODY_PART_LABEL, type BodyPart } from "@/lib/ai-recommend";
 import type { CommunityPost, PostComment } from "@/lib/types";
 import { formatDuration, cn } from "@/lib/utils";
+
+const BODY_PARTS = Object.keys(BODY_PART_LABEL) as BodyPart[];
 
 export function PostDetailModal({
   post,
@@ -54,7 +57,15 @@ export function PostDetailModal({
   const [editTitle, setEditTitle] = useState(post.title);
   const [editDesc, setEditDesc] = useState(post.description);
   const [editYoutube, setEditYoutube] = useState(post.youtubeUrl ?? "");
+  const [editBodyParts, setEditBodyParts] = useState<BodyPart[]>(
+    (post.bodyParts as BodyPart[]) ?? [],
+  );
   const [saving, setSaving] = useState(false);
+
+  // Reply state — which top-level comment's reply box is open.
+  const [replyOpenId, setReplyOpenId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState("");
+  const [replyPosting, setReplyPosting] = useState(false);
 
   useEffect(() => {
     const unsub = subscribeComments(post.id, setComments);
@@ -77,11 +88,18 @@ export function PostDetailModal({
 
   const isOwner = user?.uid === post.authorId;
 
+  const authorName = user?.displayName ?? user?.email ?? "익명";
+
   async function onToggleLike() {
     if (!user || busyLike) return;
     setBusyLike(true);
     try {
-      await toggleLike(post.id, user.uid);
+      await toggleLike(post.id, user.uid, {
+        postTitle: post.title,
+        recipientId: post.authorId,
+        actorName: authorName,
+        actorPhotoURL: user.photoURL ?? null,
+      });
     } catch (err) {
       console.error("[community] toggleLike failed:", err);
     } finally {
@@ -98,16 +116,43 @@ export function PostDetailModal({
     try {
       await addComment({
         postId: post.id,
+        postTitle: post.title,
         authorId: user.uid,
-        authorName: user.displayName ?? user.email ?? "익명",
+        authorName,
         authorPhotoURL: user.photoURL ?? null,
         text,
+        recipientId: post.authorId,
       });
       setCommentText("");
     } catch (err) {
       console.error("[community] addComment failed:", err);
     } finally {
       setPosting(false);
+    }
+  }
+
+  async function submitReply(parent: PostComment) {
+    if (!user || replyPosting) return;
+    const text = replyText.trim();
+    if (!text) return;
+    setReplyPosting(true);
+    try {
+      await addComment({
+        postId: post.id,
+        postTitle: post.title,
+        authorId: user.uid,
+        authorName,
+        authorPhotoURL: user.photoURL ?? null,
+        text,
+        parentId: parent.id,
+        recipientId: parent.authorId,
+      });
+      setReplyText("");
+      setReplyOpenId(null);
+    } catch (err) {
+      console.error("[community] reply failed:", err);
+    } finally {
+      setReplyPosting(false);
     }
   }
 
@@ -133,7 +178,14 @@ export function PostDetailModal({
     setEditTitle(post.title);
     setEditDesc(post.description);
     setEditYoutube(post.youtubeUrl ?? "");
+    setEditBodyParts((post.bodyParts as BodyPart[]) ?? []);
     setEditing(true);
+  }
+
+  function toggleEditBodyPart(part: BodyPart) {
+    setEditBodyParts((prev) =>
+      prev.includes(part) ? prev.filter((p) => p !== part) : [...prev, part],
+    );
   }
 
   async function onSaveEdit() {
@@ -145,6 +197,7 @@ export function PostDetailModal({
         title,
         description: editDesc,
         youtubeUrl: editYoutube.trim() || null,
+        bodyParts: editBodyParts,
       });
       setEditing(false);
     } catch (err) {
@@ -168,6 +221,17 @@ export function PostDetailModal({
   }
 
   const totalSec = post.routine.totalDurationSec * post.routine.repeat;
+
+  // Group comments into one level of threads. `comments` arrives ordered by
+  // createdAt asc, so both top-level and replies stay chronological.
+  const topLevelComments = comments.filter((c) => !c.parentId);
+  const repliesByParent = new Map<string, PostComment[]>();
+  for (const c of comments) {
+    if (!c.parentId) continue;
+    const arr = repliesByParent.get(c.parentId) ?? [];
+    arr.push(c);
+    repliesByParent.set(c.parentId, arr);
+  }
 
   return (
     <div
@@ -265,6 +329,26 @@ export function PostDetailModal({
                 placeholder="YouTube URL (선택)"
                 className="w-full h-11 bg-surface-2 border border-border-subtle rounded-xl px-4 text-[13px] focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
               />
+              <div className="flex flex-wrap gap-2">
+                {BODY_PARTS.map((part) => {
+                  const on = editBodyParts.includes(part);
+                  return (
+                    <button
+                      key={part}
+                      type="button"
+                      onClick={() => toggleEditBodyPart(part)}
+                      className={cn(
+                        "h-8 px-3 rounded-full border text-[12px] transition-colors",
+                        on
+                          ? "border-accent/50 bg-accent/15 text-accent"
+                          : "border-border-subtle bg-surface-2 text-foreground-muted hover:border-border-strong",
+                      )}
+                    >
+                      {BODY_PART_LABEL[part]}
+                    </button>
+                  );
+                })}
+              </div>
               <div className="flex items-center gap-2">
                 <Button
                   variant="primary"
@@ -290,6 +374,18 @@ export function PostDetailModal({
               <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
                 {post.title}
               </h2>
+              {post.bodyParts.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {post.bodyParts.map((p) => (
+                    <span
+                      key={p}
+                      className="inline-flex items-center h-6 px-2.5 rounded-full bg-accent/12 text-accent text-[11px] font-medium"
+                    >
+                      {BODY_PART_LABEL[p as BodyPart] ?? p}
+                    </span>
+                  ))}
+                </div>
+              )}
               {post.description && (
                 <p className="mt-3 text-[14px] text-foreground-muted leading-relaxed whitespace-pre-wrap">
                   {post.description}
@@ -335,43 +431,80 @@ export function PostDetailModal({
             <h3 className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim mb-3">
               댓글 {post.commentCount}
             </h3>
-            <ul className="flex flex-col gap-3">
-              {comments.map((c) => (
-                <li key={c.id} className="group flex items-start gap-2.5">
-                  <Avatar
-                    photo={c.authorPhotoURL}
-                    name={c.authorName}
-                    size={26}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12px]">
-                      <span className="font-medium">{c.authorName}</span>
-                      <span className="ml-2 text-foreground-dim">
-                        {formatRelative(c.createdAt)}
-                      </span>
-                    </p>
-                    <p className="mt-0.5 text-[13px] text-foreground whitespace-pre-wrap break-words">
-                      {c.text}
-                    </p>
-                  </div>
-                  {user?.uid === c.authorId && (
-                    <button
-                      type="button"
-                      onClick={() => onDeleteComment(c.id)}
-                      disabled={deletingCommentId === c.id}
-                      aria-label="댓글 삭제"
-                      className="shrink-0 h-7 w-7 rounded-full text-foreground-dim hover:text-danger hover:bg-danger/10 transition-colors flex items-center justify-center disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
-                    >
-                      {deletingCommentId === c.id ? (
-                        <Loader2 size={13} className="animate-spin" />
-                      ) : (
-                        <Trash2 size={13} />
-                      )}
-                    </button>
-                  )}
-                </li>
-              ))}
-              {comments.length === 0 && (
+            <ul className="flex flex-col gap-4">
+              {topLevelComments.map((c) => {
+                const replies = repliesByParent.get(c.id) ?? [];
+                return (
+                  <li key={c.id} className="flex flex-col gap-2">
+                    <CommentRow
+                      comment={c}
+                      canDelete={user?.uid === c.authorId}
+                      deleting={deletingCommentId === c.id}
+                      onDelete={() => onDeleteComment(c.id)}
+                    />
+
+                    {(replies.length > 0 || replyOpenId === c.id) && (
+                      <div className="ml-3 pl-5 border-l border-border-subtle flex flex-col gap-3">
+                        {replies.map((r) => (
+                          <CommentRow
+                            key={r.id}
+                            comment={r}
+                            small
+                            canDelete={user?.uid === r.authorId}
+                            deleting={deletingCommentId === r.id}
+                            onDelete={() => onDeleteComment(r.id)}
+                          />
+                        ))}
+                        {replyOpenId === c.id && (
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              void submitReply(c);
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <input
+                              type="text"
+                              autoFocus
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              placeholder={`${c.authorName}님에게 답글...`}
+                              maxLength={500}
+                              className="flex-1 h-9 bg-surface-2 border border-border-subtle rounded-full px-3.5 text-[12px] placeholder:text-foreground-dim focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
+                            />
+                            <button
+                              type="submit"
+                              disabled={!replyText.trim() || replyPosting}
+                              aria-label="답글 전송"
+                              className="h-9 w-9 rounded-full bg-accent text-background flex items-center justify-center disabled:opacity-40 transition-opacity shrink-0"
+                            >
+                              {replyPosting ? (
+                                <Loader2 size={13} className="animate-spin" />
+                              ) : (
+                                <Send size={13} />
+                              )}
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                    )}
+
+                    {user && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyText("");
+                          setReplyOpenId((id) => (id === c.id ? null : c.id));
+                        }}
+                        className="self-start ml-9 text-[11px] text-foreground-dim hover:text-foreground transition-colors"
+                      >
+                        {replyOpenId === c.id ? "취소" : "답글"}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+              {topLevelComments.length === 0 && (
                 <li className="text-[12px] text-foreground-dim">
                   아직 댓글이 없어요. 첫 댓글을 남겨보세요.
                 </li>
@@ -470,6 +603,57 @@ function RoutinePreview({
           </li>
         ))}
       </ol>
+    </div>
+  );
+}
+
+function CommentRow({
+  comment: c,
+  canDelete,
+  deleting,
+  onDelete,
+  small,
+}: {
+  comment: PostComment;
+  canDelete: boolean;
+  deleting: boolean;
+  onDelete: () => void;
+  small?: boolean;
+}) {
+  return (
+    <div className="group flex items-start gap-2.5">
+      <Avatar photo={c.authorPhotoURL} name={c.authorName} size={small ? 22 : 26} />
+      <div className="min-w-0 flex-1">
+        <p className="text-[12px]">
+          <span className="font-medium">{c.authorName}</span>
+          <span className="ml-2 text-foreground-dim">
+            {formatRelative(c.createdAt)}
+          </span>
+        </p>
+        <p
+          className={cn(
+            "mt-0.5 text-foreground whitespace-pre-wrap break-words",
+            small ? "text-[12px]" : "text-[13px]",
+          )}
+        >
+          {c.text}
+        </p>
+      </div>
+      {canDelete && (
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={deleting}
+          aria-label="댓글 삭제"
+          className="shrink-0 h-7 w-7 rounded-full text-foreground-dim hover:text-danger hover:bg-danger/10 transition-colors flex items-center justify-center disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+        >
+          {deleting ? (
+            <Loader2 size={13} className="animate-spin" />
+          ) : (
+            <Trash2 size={13} />
+          )}
+        </button>
+      )}
     </div>
   );
 }

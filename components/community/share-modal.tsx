@@ -6,8 +6,11 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { useTimerStore } from "@/store/timer-store";
 import { createPost, extractYoutubeId } from "@/lib/community";
+import { BODY_PART_LABEL, type BodyPart } from "@/lib/ai-recommend";
 import { formatDuration, cn } from "@/lib/utils";
 import type { Routine } from "@/lib/types";
+
+const BODY_PARTS = Object.keys(BODY_PART_LABEL) as BodyPart[];
 
 type Status =
   | { kind: "idle" }
@@ -25,7 +28,14 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
   const [title, setTitle] = useState(initialRoutine?.name ?? "");
   const [description, setDescription] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [bodyParts, setBodyParts] = useState<BodyPart[]>([]);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
+
+  function toggleBodyPart(part: BodyPart) {
+    setBodyParts((prev) =>
+      prev.includes(part) ? prev.filter((p) => p !== part) : [...prev, part],
+    );
+  }
 
   const selected: Routine | undefined = useMemo(
     () => routines.find((r) => r.id === routineId),
@@ -63,6 +73,7 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
         title: title.trim(),
         description: description.trim(),
         youtubeUrl: youtubeUrl.trim() || null,
+        bodyParts,
         routine: selected,
       });
       onClose();
@@ -135,6 +146,29 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
               required
               placeholder="예: 출근 전 10분 코어 루틴"
             />
+          </Section>
+
+          <Section label="운동 부위" hint="선택 — 여러 개 가능">
+            <div className="flex flex-wrap gap-2">
+              {BODY_PARTS.map((part) => {
+                const on = bodyParts.includes(part);
+                return (
+                  <button
+                    key={part}
+                    type="button"
+                    onClick={() => toggleBodyPart(part)}
+                    className={cn(
+                      "h-9 px-4 rounded-full border text-[13px] transition-colors",
+                      on
+                        ? "border-accent/50 bg-accent/15 text-accent"
+                        : "border-border-subtle bg-surface-2 text-foreground-muted hover:border-border-strong",
+                    )}
+                  >
+                    {BODY_PART_LABEL[part]}
+                  </button>
+                );
+              })}
+            </div>
           </Section>
 
           <Section label="설명" hint="선택">

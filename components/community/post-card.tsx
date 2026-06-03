@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { Heart, MessageCircle, Play } from "lucide-react";
+import { Heart, MessageCircle, Play, Dumbbell } from "lucide-react";
 import type { CommunityPost } from "@/lib/types";
 import { youtubeThumbnail } from "@/lib/community";
+import { BODY_PART_LABEL, type BodyPart } from "@/lib/ai-recommend";
 import { formatDuration } from "@/lib/utils";
 
 export function PostCard({
@@ -15,131 +16,74 @@ export function PostCard({
 }) {
   const totalSec = post.routine.totalDurationSec * post.routine.repeat;
   const workRounds = post.routine.rounds.filter((r) => r.type === "work").length;
+
   return (
     <button
       type="button"
       onClick={() => onOpen(post.id)}
-      className="card-premium overflow-hidden text-left flex flex-col hover:border-border-strong transition-colors"
+      className="card-premium w-full text-left p-3 flex items-center gap-3 hover:border-border-strong transition-colors"
     >
-      <div className="relative aspect-video bg-surface-2">
+      {/* Thumbnail / icon */}
+      <div className="relative h-16 w-16 sm:h-[68px] sm:w-[68px] shrink-0 rounded-xl overflow-hidden bg-surface-2">
         {post.youtubeId ? (
           <>
             <Image
               src={youtubeThumbnail(post.youtubeId)}
               alt=""
               fill
-              sizes="(min-width: 768px) 33vw, 100vw"
+              sizes="68px"
               className="object-cover"
               unoptimized
             />
-            <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 px-2 h-6 rounded-full bg-black/70 backdrop-blur text-[11px]">
-              <Play size={10} className="text-accent fill-accent" />
-              YouTube
+            <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full bg-black/70 backdrop-blur flex items-center justify-center">
+              <Play size={8} className="text-accent fill-accent" />
             </span>
           </>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <span className="text-[11px] uppercase tracking-[0.2em] text-foreground-dim">
-                Routine
-              </span>
-              <p className="mt-1 font-display text-2xl font-semibold tracking-tight px-4 line-clamp-2">
-                {post.routine.name}
-              </p>
-            </div>
+          <div className="absolute inset-0 flex items-center justify-center text-foreground-dim">
+            <Dumbbell size={20} />
           </div>
         )}
       </div>
 
-      <div className="p-4 flex flex-col gap-3 flex-1">
-        <div className="flex items-start gap-3">
-          <Avatar
-            photo={post.authorPhotoURL}
-            name={post.authorName}
-            size={24}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-medium truncate">{post.authorName}</p>
-            <p className="text-[11px] text-foreground-dim">
-              {formatRelative(post.createdAt)}
-            </p>
-          </div>
-        </div>
-
-        <h3 className="font-display text-[16px] font-semibold tracking-tight line-clamp-2">
+      {/* Summary */}
+      <div className="min-w-0 flex-1 flex flex-col gap-1">
+        <h3 className="text-[14px] sm:text-[15px] font-semibold tracking-tight truncate">
           {post.title}
         </h3>
 
+        <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-foreground-dim">
+          {post.bodyParts.slice(0, 3).map((p) => (
+            <span
+              key={p}
+              className="inline-flex items-center h-5 px-2 rounded-full bg-accent/12 text-accent font-medium"
+            >
+              {BODY_PART_LABEL[p as BodyPart] ?? p}
+            </span>
+          ))}
+          <span className="tabular-nums">{formatDuration(totalSec)}</span>
+          <span>·</span>
+          <span>{workRounds}라운드</span>
+        </div>
+
         {post.description && (
-          <p className="text-[13px] text-foreground-muted leading-relaxed line-clamp-2">
+          <p className="text-[12px] text-foreground-muted leading-snug line-clamp-1">
             {post.description}
           </p>
         )}
+      </div>
 
-        <div className="flex items-center gap-3 text-[11px] text-foreground-dim">
-          <span>{workRounds}개 라운드</span>
-          <span>·</span>
-          <span>{formatDuration(totalSec)}</span>
-        </div>
-
-        <div className="flex items-center gap-4 text-[12px] text-foreground-muted mt-auto pt-1">
-          <span className="inline-flex items-center gap-1">
-            <Heart size={13} />
-            {post.likeCount}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <MessageCircle size={13} />
-            {post.commentCount}
-          </span>
-        </div>
+      {/* Stats */}
+      <div className="shrink-0 flex flex-col items-end gap-1 text-[11px] text-foreground-muted self-stretch justify-center">
+        <span className="inline-flex items-center gap-1">
+          <Heart size={12} />
+          {post.likeCount}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <MessageCircle size={12} />
+          {post.commentCount}
+        </span>
       </div>
     </button>
   );
-}
-
-function Avatar({
-  photo,
-  name,
-  size,
-}: {
-  photo: string | null;
-  name: string;
-  size: number;
-}) {
-  if (photo) {
-    return (
-      <Image
-        src={photo}
-        alt=""
-        width={size}
-        height={size}
-        className="rounded-full object-cover shrink-0"
-        unoptimized
-      />
-    );
-  }
-  return (
-    <span
-      className="rounded-full bg-accent/15 text-accent flex items-center justify-center text-[10px] font-semibold shrink-0"
-      style={{ width: size, height: size }}
-    >
-      {name.trim().slice(0, 1).toUpperCase() || "?"}
-    </span>
-  );
-}
-
-function formatRelative(ts: number): string {
-  if (!ts) return "방금";
-  const diffMs = Date.now() - ts;
-  const min = Math.floor(diffMs / 60000);
-  if (min < 1) return "방금";
-  if (min < 60) return `${min}분 전`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간 전`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}일 전`;
-  return new Date(ts).toLocaleDateString("ko-KR", {
-    month: "short",
-    day: "numeric",
-  });
 }

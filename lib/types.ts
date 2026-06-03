@@ -47,6 +47,9 @@ export interface CommunityPost {
   youtubeUrl: string | null;
   // Stored alongside youtubeUrl for fast thumb/embed rendering without re-parsing on the client.
   youtubeId: string | null;
+  // Target body parts (BodyPart keys, e.g. "core"/"legs"). Optional — older
+  // posts predate this field. Powers the compact card summary.
+  bodyParts: string[];
   routine: Routine;
   likeCount: number;
   commentCount: number;
@@ -59,6 +62,27 @@ export interface PostComment {
   authorName: string;
   authorPhotoURL: string | null;
   text: string;
+  // null/absent = top-level comment; otherwise the id of the comment this is a
+  // reply to (one level of threading).
+  parentId: string | null;
+  createdAt: number;
+}
+
+// In-app notification delivered to a post/comment author when someone interacts
+// with their content. Stored at /users/{recipientUid}/notifications/{id}.
+export type NotificationType = "like" | "comment" | "reply";
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  postId: string;
+  postTitle: string;
+  actorId: string;
+  actorName: string;
+  actorPhotoURL: string | null;
+  // Comment/reply body preview ("" for likes).
+  preview: string;
+  read: boolean;
   createdAt: number;
 }
 

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/user-menu";
+import { NotificationBell } from "@/components/community/notification-bell";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -48,6 +49,7 @@ export function SiteHeader() {
               시작하기
             </Button>
           </Link>
+          <NotificationBell />
           <UserMenu />
         </div>
       </div>
