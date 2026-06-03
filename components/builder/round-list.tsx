@@ -57,13 +57,17 @@ export function RoundList({ routine }: Props) {
         strategy={verticalListSortingStrategy}
       >
         <div className="flex flex-col gap-2">
-          {routine.rounds.map((round) => (
+          {routine.rounds.map((round, idx) => (
             <RoundCard
               key={round.id}
               round={round}
+              index={idx}
+              total={routine.rounds.length}
               onChange={(patch) => updateRound(routine.id, round.id, patch)}
               onDuplicate={() => duplicateRound(routine.id, round.id)}
               onRemove={() => removeRound(routine.id, round.id)}
+              onMoveUp={() => reorderRounds(routine.id, idx, idx - 1)}
+              onMoveDown={() => reorderRounds(routine.id, idx, idx + 1)}
             />
           ))}
         </div>

@@ -5,6 +5,8 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   Copy,
   GripVertical,
+  ChevronUp,
+  ChevronDown,
   Minus,
   Plus,
   Trash2,
@@ -44,12 +46,25 @@ const typeMeta: Record<
 
 interface Props {
   round: Round;
+  index: number;
+  total: number;
   onChange: (patch: Partial<Round>) => void;
   onDuplicate: () => void;
   onRemove: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }
 
-export function RoundCard({ round, onChange, onDuplicate, onRemove }: Props) {
+export function RoundCard({
+  round,
+  index,
+  total,
+  onChange,
+  onDuplicate,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+}: Props) {
   const {
     attributes,
     listeners,
@@ -86,6 +101,26 @@ export function RoundCard({ round, onChange, onDuplicate, onRemove }: Props) {
       >
         <GripVertical size={18} />
       </button>
+
+      {/* Reorder buttons (mobile only — no drag handle on touch) */}
+      <div className="sm:hidden flex flex-col shrink-0 -my-1 -ml-1">
+        <button
+          onClick={onMoveUp}
+          disabled={index === 0}
+          aria-label="위로 이동"
+          className="h-[18px] w-6 flex items-center justify-center text-foreground-dim hover:text-foreground disabled:opacity-25 transition-colors"
+        >
+          <ChevronUp size={16} />
+        </button>
+        <button
+          onClick={onMoveDown}
+          disabled={index === total - 1}
+          aria-label="아래로 이동"
+          className="h-[18px] w-6 flex items-center justify-center text-foreground-dim hover:text-foreground disabled:opacity-25 transition-colors"
+        >
+          <ChevronDown size={16} />
+        </button>
+      </div>
 
       {/* Type icon */}
       <div
