@@ -97,7 +97,7 @@ export function UserMenu() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-64 card-premium p-2 shadow-2xl shadow-black/40 z-50"
+          className="fixed right-3 left-auto top-[calc(env(safe-area-inset-top)+4rem)] w-[min(16rem,calc(100vw-1.5rem))] sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-64 card-premium p-2 shadow-2xl shadow-black/40 z-50"
         >
           <div className="px-3 py-2.5 flex items-center gap-3">
             <Avatar photo={photo} initials={initials} size={36} />
