@@ -98,6 +98,13 @@ body {
      break so nothing overflows its container. */
   word-break: keep-all;
   overflow-wrap: break-word;
+  /* Never allow horizontal scrolling: any element wider than the viewport
+     (decorative glows, dropdowns, etc.) was making mobile browsers shrink-to-
+     fit and "zoom" the whole page. `clip` (not `hidden`) prevents this without
+     turning the page into a scroll container, so the sticky header keeps
+     working. */
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 body {

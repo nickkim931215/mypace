@@ -94,7 +94,7 @@ export function NotificationBell() {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 mt-2 w-[320px] max-w-[calc(100vw-1.5rem)] card-premium p-0 shadow-2xl shadow-black/40 z-50 overflow-hidden"
+          className="fixed left-3 right-3 top-[calc(env(safe-area-inset-top)+4rem)] w-auto sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[340px] card-premium p-0 shadow-2xl shadow-black/40 z-50 overflow-hidden"
         >
           <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
             <span className="text-[13px] font-semibold">알림</span>
