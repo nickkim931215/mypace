@@ -1,0 +1,114 @@
+/* ──────────────────────────────────────────────────────────────
+   MyPace — Motivational ("hype") music manifest
+   ────────────────────────────────────────────────────────────────
+   These are the lyric-driven tracks that play during a workout when
+   the user picks the 동기부여 audio mode. Three "spice levels":
+
+     mild   (순한맛)   — purely positive, encouraging lyrics
+     medium (덜매운맛) — pointed but not brutal
+     spicy  (매운맛)   — savage diet-shaming roast lyrics 🔥
+
+   Audio files live in the app's own `public/` folder (served by Vercel
+   — no Firebase Storage, no billing). To add a song:
+     1. Drop the mp3 into  public/music/hype/<flavor>/<file>.mp3
+     2. Add one entry to the matching array below.
+   The path you put in `src` is just the public URL: "/music/...".
+   ────────────────────────────────────────────────────────────── */
+
+export type HypeFlavor = "mild" | "medium" | "spicy";
+/** BGM is instrumental (no lyrics). Two moods. */
+export type BgmMood = "boost" | "flow";
+
+export interface MusicTrack {
+  /** Stable id (use the filename without extension). */
+  id: string;
+  title: string;
+  artist?: string;
+  /**
+   * Audio URL. Normally a public path served from `public/`, e.g.
+   * "/music/hype/spicy/01-burn.mp3". A full "https://…" URL also works
+   * if you ever host elsewhere.
+   */
+  src: string;
+}
+
+export const BGM_ORDER: BgmMood[] = ["boost", "flow"];
+
+export const BGM_META: Record<
+  BgmMood,
+  { label: string; emoji: string; tagline: string; accent: string }
+> = {
+  boost: {
+    label: "부스트",
+    emoji: "⚡",
+    tagline: "심박수 끌어올리는 비트",
+    accent: "var(--accent)",
+  },
+  flow: {
+    label: "플로우",
+    emoji: "🌊",
+    tagline: "흐름 타는 잔잔한 사운드",
+    accent: "var(--rest)",
+  },
+};
+
+export const FLAVOR_ORDER: HypeFlavor[] = ["mild", "medium", "spicy"];
+
+export const FLAVOR_META: Record<
+  HypeFlavor,
+  { label: string; emoji: string; tagline: string; accent: string }
+> = {
+  mild: {
+    label: "순한맛",
+    emoji: "🌱",
+    tagline: "긍정·응원으로만 가득",
+    accent: "var(--rest)",
+  },
+  medium: {
+    label: "덜매운맛",
+    emoji: "🌶️",
+    tagline: "적당히 따끔한 자극",
+    accent: "#f59e0b",
+  },
+  spicy: {
+    label: "매운맛",
+    emoji: "🔥",
+    tagline: "악담 수준의 다이어트 쓴소리",
+    accent: "#ef4444",
+  },
+};
+
+/**
+ * Fill these arrays as you drop mp3s into public/music/hype/<flavor>/.
+ * Aim for ~5–10 per flavor; the player shuffles and plays continuously.
+ *
+ * Example entry:
+ *   { id: "01-burn", title: "지방을 태워라", src: "/music/hype/spicy/01-burn.mp3" }
+ */
+export const HYPE_TRACKS: Record<HypeFlavor, MusicTrack[]> = {
+  mild: [],
+  medium: [],
+  spicy: [
+    { id: "spicy1", title: "매운맛 1", src: "/music/hype/spicy/spicy1.mp3" },
+  ],
+};
+
+/**
+ * Instrumental BGM, no lyrics. Drop mp3s into public/music/bgm/<mood>/.
+ * Until filled, the player falls back to a synthesized melody loop.
+ *
+ * Example entry:
+ *   { id: "01", title: "아드레날린", src: "/music/bgm/boost/01.mp3" }
+ */
+export const BGM_TRACKS: Record<BgmMood, MusicTrack[]> = {
+  boost: [],
+  flow: [],
+};
+
+export function tracksFor(flavor: HypeFlavor): MusicTrack[] {
+  return HYPE_TRACKS[flavor] ?? [];
+}
+
+export function bgmTracksFor(mood: BgmMood): MusicTrack[] {
+  return BGM_TRACKS[mood] ?? [];
+}

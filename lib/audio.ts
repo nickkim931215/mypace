@@ -12,6 +12,7 @@ type Volumes = {
   master: number;
   timer: number;
   metronome: number;
+  music: number;
   ui: number;
 };
 
@@ -20,9 +21,12 @@ class AudioEngine {
   private masterGain: GainNode | null = null;
   private timerBus: GainNode | null = null;
   private metroBus: GainNode | null = null;
+  private musicBus: GainNode | null = null;
   private uiBus: GainNode | null = null;
   private theme: SoundTheme = "minimal";
-  private vols: Volumes = { master: 0.8, timer: 1, metronome: 0.6, ui: 0.5 };
+  private vols: Volumes = { master: 0.8, timer: 1, metronome: 0.6, music: 0.7, ui: 0.5 };
+  // Synthesized BGM loop (melody-only). Runs off a simple lookahead timer.
+  private bgmTimer: ReturnType<typeof setInterval> | null = null;
 
   /** Must be called from a user-gesture handler (button click) to unlock audio. */
   unlock() {
@@ -37,9 +41,11 @@ class AudioEngine {
     this.masterGain = this.ctx.createGain();
     this.timerBus = this.ctx.createGain();
     this.metroBus = this.ctx.createGain();
+    this.musicBus = this.ctx.createGain();
     this.uiBus = this.ctx.createGain();
     this.timerBus.connect(this.masterGain);
     this.metroBus.connect(this.masterGain);
+    this.musicBus.connect(this.masterGain);
     this.uiBus.connect(this.masterGain);
     this.masterGain.connect(this.ctx.destination);
     this.applyVolumes();
@@ -55,11 +61,20 @@ class AudioEngine {
   }
 
   private applyVolumes() {
-    if (!this.ctx || !this.masterGain || !this.timerBus || !this.metroBus || !this.uiBus) return;
+    if (
+      !this.ctx ||
+      !this.masterGain ||
+      !this.timerBus ||
+      !this.metroBus ||
+      !this.musicBus ||
+      !this.uiBus
+    )
+      return;
     const t = this.ctx.currentTime;
     this.masterGain.gain.setTargetAtTime(this.vols.master, t, 0.02);
     this.timerBus.gain.setTargetAtTime(this.vols.timer, t, 0.02);
     this.metroBus.gain.setTargetAtTime(this.vols.metronome, t, 0.02);
+    this.musicBus.gain.setTargetAtTime(this.vols.music, t, 0.02);
     this.uiBus.gain.setTargetAtTime(this.vols.ui, t, 0.02);
   }
 
@@ -281,6 +296,74 @@ class AudioEngine {
         type: "square",
         peak: peak * 0.8,
       });
+    }
+  }
+
+  /* ─── Melody-only BGM ────────────────────────────────────────
+     A synthesized arpeggio loop used as the fallback for the BGM
+     mode until the user uploads instrumental tracks. Two moods:
+       • "boost" — brisk, bright, with a soft kick on the downbeat;
+       • "flow"  — slow, mellow triangle pads.
+     Plays through the dedicated music bus so its volume is
+     independent of the metronome and timer cues. */
+  startBgm(mood: "boost" | "flow" = "flow") {
+    this.unlock();
+    if (!this.ctx || !this.musicBus || this.bgmTimer) return;
+    const boost = mood === "boost";
+    const notes = boost
+      ? // Bright, driving major-pentatonic run.
+        [
+          523.25, 659.25, 783.99, 1046.5, // C E G C↑
+          987.77, 783.99, 659.25, 783.99, // B G E G
+          587.33, 739.99, 880.0, 1174.66, // D F# A D↑
+          1046.5, 880.0, 739.99, 587.33, // C↑ A F# D
+        ]
+      : // Soft Cmaj9 / Am wash.
+        [
+          523.25, 659.25, 783.99, 659.25, // C E G E
+          587.33, 698.46, 880.0, 698.46, // D F A F
+          493.88, 587.33, 783.99, 587.33, // B D G D
+          440.0, 523.25, 659.25, 523.25, // A C E C
+        ];
+    let i = 0;
+    const playOne = () => {
+      if (!this.musicBus) return;
+      const freq = notes[i % notes.length];
+      this.pluck(this.musicBus, {
+        freq,
+        duration: boost ? 0.6 : 1.3,
+        type: boost ? "sawtooth" : "triangle",
+        peak: boost ? 0.13 : 0.16,
+        attack: boost ? 0.005 : 0.05,
+      });
+      if (i % 4 === 0) {
+        if (boost) {
+          // Soft kick + sub-octave for momentum.
+          this.noiseBurst(this.musicBus, {
+            duration: 0.12,
+            peak: 0.18,
+            freq: 110,
+            q: 0.8,
+          });
+        }
+        this.pluck(this.musicBus, {
+          freq: freq / 2,
+          duration: boost ? 0.9 : 1.9,
+          type: "sine",
+          peak: 0.12,
+          attack: boost ? 0.01 : 0.08,
+        });
+      }
+      i++;
+    };
+    playOne();
+    this.bgmTimer = setInterval(playOne, boost ? 300 : 470);
+  }
+
+  stopBgm() {
+    if (this.bgmTimer) {
+      clearInterval(this.bgmTimer);
+      this.bgmTimer = null;
     }
   }
 

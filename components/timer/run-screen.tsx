@@ -18,7 +18,8 @@ import { useTimerStore } from "@/store/timer-store";
 import { useTimerEngine } from "@/hooks/use-timer-engine";
 import { audio } from "@/lib/audio";
 import { ProgressRing } from "./progress-ring";
-import { MetronomePanel } from "./metronome-panel";
+import { AudioPanel } from "./audio-panel";
+import { useWorkoutAudio } from "@/hooks/use-workout-audio";
 import { formatClock, cn } from "@/lib/utils";
 import type { Routine } from "@/lib/types";
 
@@ -32,6 +33,10 @@ export function RunScreen({ routine }: Props) {
   const setMasterVolume = useTimerStore((s) => s.setMasterVolume);
   const timerVolume = useTimerStore((s) => s.timerVolume);
   const metronomeVolume = useTimerStore((s) => s.metronomeVolume);
+  const musicVolume = useTimerStore((s) => s.musicVolume);
+  const audioMode = useTimerStore((s) => s.audioMode);
+  const bgmMood = useTimerStore((s) => s.bgmMood);
+  const hypeFlavor = useTimerStore((s) => s.hypeFlavor);
   const uiVolume = useTimerStore((s) => s.uiVolume);
   const soundTheme = useTimerStore((s) => s.soundTheme);
   const voiceGuideEnabled = useTimerStore((s) => s.voiceGuideEnabled);
@@ -84,9 +89,23 @@ export function RunScreen({ routine }: Props) {
     };
   }, []);
   const numberFontSize = Math.round(ringSize * 0.34);
+  // The round name ("운동 이름" / "Rest") used to be a flat 13px, which looked
+  // tiny next to the huge timer number. Scale it from the ring too so it stays
+  // legible at a glance during a workout.
+  const nameFontSize = Math.round(ringSize * 0.085);
 
   const isWork = snapshot.currentRound?.type === "work";
   const isRest = snapshot.currentRound?.type === "rest";
+
+  // Drive BGM / hype music off the run state (metronome is handled in-panel).
+  useWorkoutAudio({
+    audioMode,
+    bgmMood,
+    hypeFlavor,
+    status: snapshot.status,
+    masterVolume,
+    musicVolume,
+  });
 
   const ringColor = isWork
     ? "var(--accent)"
@@ -256,7 +275,8 @@ export function RunScreen({ routine }: Props) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.35 }}
-                className="text-[13px] text-foreground-muted truncate max-w-[200px] text-center"
+                style={{ fontSize: nameFontSize }}
+                className="font-medium text-foreground truncate max-w-[80%] text-center leading-tight"
               >
                 {snapshot.currentRound?.name ?? "—"}
               </motion.div>
@@ -295,18 +315,16 @@ export function RunScreen({ routine }: Props) {
 
       {/* Bottom — pad for the home indicator / gesture bar (viewportFit: cover). */}
       <div className="px-5 sm:px-8 pb-[max(1.75rem,env(safe-area-inset-bottom))] sm:pb-[max(2.5rem,env(safe-area-inset-bottom))] flex flex-col gap-4">
-        {/* Metronome */}
-        {snapshot.currentRound?.type === "work" && (
-          <MetronomePanel
-            bpm={currentRoundBpm}
-            onBpmChange={(bpm) =>
-              snapshot.currentRound &&
-              updateRound(routine.id, snapshot.currentRound.id, { bpm })
-            }
-            enabled
-            compact
-          />
-        )}
+        {/* Audio: metronome / BGM / hype music (exclusive) */}
+        <AudioPanel
+          bpm={currentRoundBpm}
+          onBpmChange={(bpm) =>
+            snapshot.currentRound &&
+            updateRound(routine.id, snapshot.currentRound.id, { bpm })
+          }
+          isWorkRound={isWork}
+          isRunning={snapshot.status === "running"}
+        />
 
         {/* Master volume + transport */}
         <div className="flex items-center gap-3">

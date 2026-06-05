@@ -43,6 +43,13 @@ const defaultRoutine = (): Routine => {
 export type MetronomeSound = "wood" | "hihat" | "click";
 export type SoundTheme = "minimal" | "gym-pro" | "zen";
 
+/** Mutually-exclusive in-workout audio source. Only one plays at a time. */
+export type AudioMode = "off" | "metronome" | "bgm" | "hype";
+/** "Spice level" of the motivational (hype) vocal tracks. */
+export type HypeFlavor = "mild" | "medium" | "spicy";
+/** Instrumental BGM mood: energetic ("boost") vs calm ("flow"). */
+export type BgmMood = "boost" | "flow";
+
 interface TimerStore {
   routines: Routine[];
   currentRoutineId: string | null;
@@ -54,10 +61,14 @@ interface TimerStore {
   masterVolume: number;
   timerVolume: number;
   metronomeVolume: number;
+  musicVolume: number;
   uiVolume: number;
   voiceGuideEnabled: boolean;
   soundTheme: SoundTheme;
-  metronomeEnabled: boolean;
+  // Which audio source plays during a workout (exclusive).
+  audioMode: AudioMode;
+  bgmMood: BgmMood;
+  hypeFlavor: HypeFlavor;
   metronomeSound: MetronomeSound;
 
   // Routine library
@@ -92,10 +103,13 @@ interface TimerStore {
   setMasterVolume: (v: number) => void;
   setTimerVolume: (v: number) => void;
   setMetronomeVolume: (v: number) => void;
+  setMusicVolume: (v: number) => void;
   setUiVolume: (v: number) => void;
   setVoiceGuideEnabled: (v: boolean) => void;
   setSoundTheme: (t: SoundTheme) => void;
-  toggleMetronome: () => void;
+  setAudioMode: (m: AudioMode) => void;
+  setBgmMood: (m: BgmMood) => void;
+  setHypeFlavor: (f: HypeFlavor) => void;
   setMetronomeSound: (s: MetronomeSound) => void;
 }
 
@@ -117,10 +131,13 @@ export const useTimerStore = create<TimerStore>()(
         masterVolume: 0.8,
         timerVolume: 1,
         metronomeVolume: 0.6,
+        musicVolume: 0.7,
         uiVolume: 0.5,
         voiceGuideEnabled: true,
         soundTheme: "minimal",
-        metronomeEnabled: false,
+        audioMode: "off",
+        bgmMood: "boost",
+        hypeFlavor: "mild",
         metronomeSound: "wood",
 
         getCurrentRoutine: () => {
@@ -364,18 +381,32 @@ export const useTimerStore = create<TimerStore>()(
         setMasterVolume: (v) => set({ masterVolume: clamp01(v) }),
         setTimerVolume: (v) => set({ timerVolume: clamp01(v) }),
         setMetronomeVolume: (v) => set({ metronomeVolume: clamp01(v) }),
+        setMusicVolume: (v) => set({ musicVolume: clamp01(v) }),
         setUiVolume: (v) => set({ uiVolume: clamp01(v) }),
         setVoiceGuideEnabled: (v) => set({ voiceGuideEnabled: v }),
         setSoundTheme: (t) => set({ soundTheme: t }),
-        toggleMetronome: () =>
-          set((s) => ({ metronomeEnabled: !s.metronomeEnabled })),
+        setAudioMode: (m) => set({ audioMode: m }),
+        setBgmMood: (m) => set({ bgmMood: m }),
+        setHypeFlavor: (f) => set({ hypeFlavor: f }),
         setMetronomeSound: (s) => set({ metronomeSound: s }),
       };
     },
     {
       name: "mypace.timer-store.v1",
       storage: createJSONStorage(() => localStorage),
-      version: 1,
+      version: 2,
+      // v1 → v2: the metronome on/off toggle became a 4-way exclusive audioMode
+      // (off / metronome / bgm / hype). Carry the old toggle forward.
+      migrate: (persisted, version) => {
+        const s = persisted as Record<string, unknown> | undefined;
+        if (s && version < 2) {
+          s.audioMode = s.metronomeEnabled ? "metronome" : "off";
+          s.hypeFlavor = "mild";
+          s.musicVolume = 0.7;
+          delete s.metronomeEnabled;
+        }
+        return s as unknown as TimerStore;
+      },
     },
   ),
 );
