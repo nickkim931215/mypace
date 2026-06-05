@@ -78,22 +78,22 @@ export function Hero() {
               duration: 0.8,
               ease: [0.22, 1, 0.36, 1],
             }}
-            className="mt-16 w-full max-w-md card-premium p-8 sm:p-10"
+            className="mt-10 w-full max-w-sm card-premium p-6 sm:p-7"
           >
             <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-foreground-dim">
               <span>Round 2 of 8</span>
               <span className="text-work">● Work</span>
             </div>
-            <div className="mt-4 text-center">
+            <div className="mt-3 text-center">
               <div className="text-sm text-foreground-muted">Plank</div>
-              <div className="tabular font-display font-semibold text-[88px] sm:text-[112px] leading-none tracking-[-0.04em] mt-2 text-foreground">
+              <div className="tabular font-display font-semibold text-[60px] sm:text-[76px] leading-none tracking-[-0.04em] mt-1 text-foreground">
                 00:40
               </div>
-              <div className="mt-3 text-[13px] text-foreground-muted">
+              <div className="mt-2 text-[13px] text-foreground-muted">
                 다음 — 휴식 20초
               </div>
             </div>
-            <div className="mt-6 h-1.5 rounded-full bg-surface-3 overflow-hidden">
+            <div className="mt-5 h-1.5 rounded-full bg-surface-3 overflow-hidden">
               <motion.div
                 className="h-full bg-accent"
                 initial={{ width: "0%" }}
