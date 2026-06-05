@@ -1,9 +1,7 @@
 "use client";
 
-import Image from "next/image";
-import { Heart, MessageCircle, Trophy } from "lucide-react";
+import { Heart, MessageCircle, Trophy, Flame } from "lucide-react";
 import type { CommunityPost } from "@/lib/types";
-import { RecordCalendarCard } from "./record-calendar-card";
 
 export function RecordPostCard({
   post,
@@ -12,89 +10,62 @@ export function RecordPostCard({
   post: CommunityPost;
   onOpen: (id: string) => void;
 }) {
-  if (!post.record) return null;
+  const record = post.record;
+  if (!record) return null;
+
   return (
     <button
       type="button"
       onClick={() => onOpen(post.id)}
-      className="card-premium w-full text-left p-4 flex flex-col gap-3 hover:border-border-strong transition-colors"
+      className="card-premium w-full text-left p-3 flex items-center gap-3 hover:border-border-strong transition-colors"
     >
-      <div className="flex items-center gap-2.5">
-        <Avatar photo={post.authorPhotoURL} name={post.authorName} size={28} />
-        <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-medium truncate">{post.authorName}</p>
-          <p className="text-[11px] text-foreground-dim">
-            {formatRelative(post.createdAt)}
-          </p>
-        </div>
-        <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-accent/12 text-accent text-[11px] font-medium shrink-0">
-          <Trophy size={11} />
-          기록
+      {/* Streak tile (stands in for the routine thumbnail) */}
+      <div className="relative h-16 w-16 sm:h-[68px] sm:w-[68px] shrink-0 rounded-xl overflow-hidden bg-accent/12 flex flex-col items-center justify-center text-accent">
+        <Flame size={18} className={record.streak > 0 ? "fill-accent/30" : undefined} />
+        <span className="font-display text-[17px] font-semibold tracking-tight tabular-nums leading-none mt-1">
+          {record.streak}
         </span>
+        <span className="text-[9px] text-accent/80 mt-0.5">연속일</span>
       </div>
 
-      <h3 className="font-display text-[16px] font-semibold tracking-tight line-clamp-2">
-        {post.title}
-      </h3>
+      {/* Summary */}
+      <div className="min-w-0 flex-1 flex flex-col gap-1">
+        <div className="flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-accent/12 text-accent text-[10px] font-medium shrink-0">
+            <Trophy size={10} />
+            기록
+          </span>
+          <h3 className="text-[14px] sm:text-[15px] font-semibold tracking-tight truncate">
+            {post.title}
+          </h3>
+        </div>
 
-      <RecordCalendarCard record={post.record} />
+        <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-foreground-dim">
+          <span className="tabular-nums">{record.monthLabel}</span>
+          <span>·</span>
+          <span className="tabular-nums">이번 주 {record.weekCount}회</span>
+          <span>·</span>
+          <span className="tabular-nums">누적 {record.totalCount}회</span>
+        </div>
 
-      <div className="flex items-center gap-4 text-[12px] text-foreground-muted pt-1">
+        {post.description && (
+          <p className="text-[12px] text-foreground-muted leading-snug line-clamp-1">
+            {post.description}
+          </p>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div className="shrink-0 flex flex-col items-end gap-1 text-[11px] text-foreground-muted self-stretch justify-center">
         <span className="inline-flex items-center gap-1">
-          <Heart size={13} />
+          <Heart size={12} />
           {post.likeCount}
         </span>
         <span className="inline-flex items-center gap-1">
-          <MessageCircle size={13} />
+          <MessageCircle size={12} />
           {post.commentCount}
         </span>
       </div>
     </button>
   );
-}
-
-function Avatar({
-  photo,
-  name,
-  size,
-}: {
-  photo: string | null;
-  name: string;
-  size: number;
-}) {
-  if (photo) {
-    return (
-      <Image
-        src={photo}
-        alt=""
-        width={size}
-        height={size}
-        className="rounded-full object-cover shrink-0"
-        unoptimized
-      />
-    );
-  }
-  return (
-    <span
-      className="rounded-full bg-accent/15 text-accent flex items-center justify-center text-[10px] font-semibold shrink-0"
-      style={{ width: size, height: size }}
-    >
-      {name.trim().slice(0, 1).toUpperCase() || "?"}
-    </span>
-  );
-}
-
-function formatRelative(ts: number): string {
-  if (!ts) return "방금";
-  const min = Math.floor((Date.now() - ts) / 60000);
-  if (min < 1) return "방금";
-  if (min < 60) return `${min}분 전`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간 전`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}일 전`;
-  return new Date(ts).toLocaleDateString("ko-KR", {
-    month: "short",
-    day: "numeric",
-  });
 }
