@@ -11,6 +11,7 @@ import {
   markNotificationRead,
 } from "@/lib/notifications";
 import type { AppNotification } from "@/lib/types";
+import { useProfileName } from "@/hooks/use-profile-name";
 import { cn } from "@/lib/utils";
 
 export function NotificationBell() {
@@ -112,41 +113,11 @@ export function NotificationBell() {
             ) : (
               <ul className="flex flex-col">
                 {items.map((n) => (
-                  <li key={n.id}>
-                    <button
-                      type="button"
-                      onClick={() => onItemClick(n)}
-                      className={cn(
-                        "w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-surface-1 transition-colors",
-                        !n.read && "bg-accent/5",
-                      )}
-                    >
-                      <NotifIcon type={n.type} photo={n.actorPhotoURL} name={n.actorName} />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] leading-snug">
-                          <span className="font-medium">{n.actorName}</span>
-                          <span className="text-foreground-muted">
-                            {n.type === "like"
-                              ? "님이 좋아요를 눌렀어요"
-                              : n.type === "reply"
-                                ? "님이 답글을 남겼어요"
-                                : "님이 댓글을 남겼어요"}
-                          </span>
-                        </p>
-                        {n.preview && (
-                          <p className="mt-0.5 text-[12px] text-foreground-muted line-clamp-1">
-                            “{n.preview}”
-                          </p>
-                        )}
-                        <p className="mt-0.5 text-[11px] text-foreground-dim truncate">
-                          {n.postTitle} · {formatRelative(n.createdAt)}
-                        </p>
-                      </div>
-                      {!n.read && (
-                        <span className="mt-1 h-2 w-2 rounded-full bg-accent shrink-0" />
-                      )}
-                    </button>
-                  </li>
+                  <NotificationRow
+                    key={n.id}
+                    n={n}
+                    onClick={() => onItemClick(n)}
+                  />
                 ))}
               </ul>
             )}
@@ -154,6 +125,53 @@ export function NotificationBell() {
         </div>
       )}
     </div>
+  );
+}
+
+function NotificationRow({
+  n,
+  onClick,
+}: {
+  n: AppNotification;
+  onClick: () => void;
+}) {
+  const actorName = useProfileName(n.actorId, n.actorName);
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        className={cn(
+          "w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-surface-1 transition-colors",
+          !n.read && "bg-accent/5",
+        )}
+      >
+        <NotifIcon type={n.type} photo={n.actorPhotoURL} name={actorName} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] leading-snug">
+            <span className="font-medium">{actorName}</span>
+            <span className="text-foreground-muted">
+              {n.type === "like"
+                ? "님이 좋아요를 눌렀어요"
+                : n.type === "reply"
+                  ? "님이 답글을 남겼어요"
+                  : "님이 댓글을 남겼어요"}
+            </span>
+          </p>
+          {n.preview && (
+            <p className="mt-0.5 text-[12px] text-foreground-muted line-clamp-1">
+              “{n.preview}”
+            </p>
+          )}
+          <p className="mt-0.5 text-[11px] text-foreground-dim truncate">
+            {n.postTitle} · {formatRelative(n.createdAt)}
+          </p>
+        </div>
+        {!n.read && (
+          <span className="mt-1 h-2 w-2 rounded-full bg-accent shrink-0" />
+        )}
+      </button>
+    </li>
   );
 }
 

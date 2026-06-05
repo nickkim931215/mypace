@@ -26,6 +26,7 @@ import {
   updatePost,
 } from "@/lib/community";
 import { BODY_PART_LABEL, type BodyPart } from "@/lib/ai-recommend";
+import { useProfileName } from "@/hooks/use-profile-name";
 import { RecordCalendarCard } from "./record-calendar-card";
 import type { CommunityPost, PostComment } from "@/lib/types";
 import { formatDuration, cn } from "@/lib/utils";
@@ -90,6 +91,15 @@ export function PostDetailModal({
   const isOwner = user?.uid === post.authorId;
 
   const authorName = user?.displayName ?? user?.email ?? "익명";
+
+  // Live display names (reflect the author's current nickname, not the snapshot
+  // stored on the post/comment at write time).
+  const postAuthorName = useProfileName(post.authorId, post.authorName);
+  const replyTarget = comments.find((c) => c.id === replyOpenId) ?? null;
+  const replyTargetName = useProfileName(
+    replyTarget?.authorId,
+    replyTarget?.authorName ?? "",
+  );
 
   async function onToggleLike() {
     if (!user || busyLike) return;
@@ -275,11 +285,11 @@ export function PostDetailModal({
           <header className="flex items-start gap-3">
             <Avatar
               photo={post.authorPhotoURL}
-              name={post.authorName}
+              name={postAuthorName}
               size={36}
             />
             <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-medium">{post.authorName}</p>
+              <p className="text-[13px] font-medium">{postAuthorName}</p>
               <p className="text-[11px] text-foreground-dim">
                 {new Date(post.createdAt).toLocaleString("ko-KR")}
               </p>
@@ -485,7 +495,7 @@ export function PostDetailModal({
                               autoFocus
                               value={replyText}
                               onChange={(e) => setReplyText(e.target.value)}
-                              placeholder={`${c.authorName}님에게 답글...`}
+                              placeholder={`${replyTargetName}님에게 답글...`}
                               maxLength={500}
                               className="flex-1 h-9 bg-surface-2 border border-border-subtle rounded-full px-3.5 text-[12px] placeholder:text-foreground-dim focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
                             />
@@ -637,12 +647,13 @@ function CommentRow({
   onDelete: () => void;
   small?: boolean;
 }) {
+  const name = useProfileName(c.authorId, c.authorName);
   return (
     <div className="group flex items-start gap-2.5">
-      <Avatar photo={c.authorPhotoURL} name={c.authorName} size={small ? 22 : 26} />
+      <Avatar photo={c.authorPhotoURL} name={name} size={small ? 22 : 26} />
       <div className="min-w-0 flex-1">
         <p className="text-[12px]">
-          <span className="font-medium">{c.authorName}</span>
+          <span className="font-medium">{name}</span>
           <span className="ml-2 text-foreground-dim">
             {formatRelative(c.createdAt)}
           </span>

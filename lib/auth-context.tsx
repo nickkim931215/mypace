@@ -18,6 +18,7 @@ import {
   type User,
 } from "firebase/auth";
 import { getFirebaseAuth, isFirebaseConfigured } from "@/firebase/config";
+import { ensureProfile } from "@/lib/profile";
 import {
   isInAppBrowser,
   isStandalonePWA,
@@ -57,6 +58,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     const unsub = onAuthStateChanged(auth, (user) => {
       setState(user ? { status: "signedIn", user } : { status: "signedOut" });
+      if (user) {
+        // First sign-in seeds a unique public profile (nickname defaults to the
+        // Google name). No-op once seeded. Fire-and-forget — display falls back
+        // to the snapshot name until this lands.
+        void ensureProfile({
+          uid: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+        }).catch((err) => console.error("[auth] ensureProfile failed:", err));
+      }
     });
     return unsub;
   }, [configured]);

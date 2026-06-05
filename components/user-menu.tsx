@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import type { User } from "firebase/auth";
 import { useAuth } from "@/lib/auth-context";
+import { useProfileName } from "@/hooks/use-profile-name";
 import { useSyncStore, type SyncStatus } from "@/store/sync-store";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,29 +16,12 @@ import {
   Loader2,
   Check,
   CalendarDays,
+  UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function UserMenu() {
   const { state, configured, signInGoogle, signOut, error } = useAuth();
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onDocClick(e: MouseEvent) {
-      if (!menuRef.current?.contains(e.target as Node)) setOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onDocClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDocClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
 
   if (!configured) {
     return (
@@ -76,9 +61,38 @@ export function UserMenu() {
     );
   }
 
-  const user = state.user;
+  return <SignedInMenu user={state.user} signOut={signOut} />;
+}
+
+function SignedInMenu({
+  user,
+  signOut,
+}: {
+  user: User;
+  signOut: () => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   const photo = user.photoURL;
-  const displayName = user.displayName ?? user.email ?? "사용자";
+  const fallbackName = user.displayName ?? user.email ?? "사용자";
+  const displayName = useProfileName(user.uid, fallbackName);
   const initials = displayName.trim().slice(0, 1).toUpperCase();
 
   return (
@@ -112,10 +126,19 @@ export function UserMenu() {
           </div>
           <SyncRow />
           <Link
-            href="/history"
+            href="/profile"
             role="menuitem"
             onClick={() => setOpen(false)}
             className="w-full mt-1 flex items-center gap-2 px-3 h-10 rounded-xl text-[13px] text-foreground-muted hover:text-foreground hover:bg-surface-1 transition-colors"
+          >
+            <UserRound size={14} />
+            내 프로필
+          </Link>
+          <Link
+            href="/history"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="w-full flex items-center gap-2 px-3 h-10 rounded-xl text-[13px] text-foreground-muted hover:text-foreground hover:bg-surface-1 transition-colors"
           >
             <CalendarDays size={14} />
             내 기록
