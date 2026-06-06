@@ -86,10 +86,18 @@ export const FLAVOR_META: Record<
  *   { id: "01-burn", title: "지방을 태워라", src: "/music/hype/spicy/01-burn.mp3" }
  */
 export const HYPE_TRACKS: Record<HypeFlavor, MusicTrack[]> = {
-  mild: [],
+  mild: [
+    { id: "mild1", title: "순한맛 1", src: "/music/hype/mild/mild1.mp3" },
+  ],
   medium: [],
   spicy: [
     { id: "spicy1", title: "매운맛 1", src: "/music/hype/spicy/spicy1.mp3" },
+    { id: "spicy2", title: "매운맛 2", src: "/music/hype/spicy/spicy2.mp3" },
+    { id: "spicy3", title: "매운맛 3", src: "/music/hype/spicy/spicy3.mp3" },
+    { id: "spicy4", title: "매운맛 4", src: "/music/hype/spicy/spicy4.mp3" },
+    { id: "spicy5", title: "매운맛 5", src: "/music/hype/spicy/spicy5.mp3" },
+    { id: "spicy6", title: "매운맛 6", src: "/music/hype/spicy/spicy6.mp3" },
+    { id: "spicy7", title: "매운맛 7", src: "/music/hype/spicy/spicy7.mp3" },
   ],
 };
 
