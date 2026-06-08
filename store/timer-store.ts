@@ -80,6 +80,9 @@ interface TimerStore {
   claimForAccount: (uid: string) => void;
   clearForSignOut: () => void;
 
+  // Remove a logged completion (e.g. an accidental run left to finish itself).
+  deleteCompletion: (id: string) => void;
+
   // Routine library
   getCurrentRoutine: () => Routine | null;
   createRoutine: (partial?: Partial<Routine>) => string;
@@ -179,6 +182,11 @@ export const useTimerStore = create<TimerStore>()(
               completions: [],
             };
           }),
+
+        deleteCompletion: (id) =>
+          set((s) => ({
+            completions: s.completions.filter((c) => c.id !== id),
+          })),
 
         getCurrentRoutine: () => {
           const { routines, currentRoutineId } = get();

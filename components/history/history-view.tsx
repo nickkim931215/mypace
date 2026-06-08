@@ -10,6 +10,8 @@ import {
   CalendarDays,
   CloudOff,
   Trophy,
+  X,
+  Trash2,
 } from "lucide-react";
 import { useTimerStore } from "@/store/timer-store";
 import { useAuth } from "@/lib/auth-context";
@@ -57,6 +59,7 @@ export function HistoryView() {
   useEffect(() => setMounted(true), []);
 
   const [shareOpen, setShareOpen] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const signedIn = state.status === "signedIn";
 
   const today = useMemo(() => startOfDay(new Date()), []);
@@ -226,23 +229,31 @@ export function HistoryView() {
             const count = countByDay.get(cell.key) ?? 0;
             const done = count > 0;
             const isToday = cell.key === todayKey;
+            const className = cn(
+              "aspect-square rounded-xl flex flex-col items-center justify-center text-[13px] relative transition-colors",
+              done
+                ? "bg-accent/15 text-accent font-semibold"
+                : "text-foreground-muted",
+              isToday && "ring-1 ring-inset ring-accent/60",
+            );
+            if (!done) {
+              return (
+                <div key={cell.key} className={className}>
+                  {cell.day}
+                </div>
+              );
+            }
             return (
-              <div
+              <button
                 key={cell.key}
-                className={cn(
-                  "aspect-square rounded-xl flex flex-col items-center justify-center text-[13px] relative transition-colors",
-                  done
-                    ? "bg-accent/15 text-accent font-semibold"
-                    : "text-foreground-muted",
-                  isToday && "ring-1 ring-inset ring-accent/60",
-                )}
-                title={done ? `${count}회 완료` : undefined}
+                type="button"
+                onClick={() => setSelectedDay(cell.key)}
+                className={cn(className, "hover:bg-accent/25 cursor-pointer")}
+                title={`${count}회 완료 · 눌러서 보기`}
               >
                 {cell.day}
-                {done && (
-                  <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-accent" />
-                )}
-              </div>
+                <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-accent" />
+              </button>
             );
           })}
         </div>
@@ -281,7 +292,158 @@ export function HistoryView() {
       </div>
 
       {shareOpen && <RecordShareModal onClose={() => setShareOpen(false)} />}
+      {selectedDay && (
+        <DayRecordsModal
+          dayKey={selectedDay}
+          onClose={() => setSelectedDay(null)}
+        />
+      )}
     </div>
+  );
+}
+
+// Day-detail sheet: lists every completion logged on one day, each removable
+// (with a per-row confirm) — for clearing an accidental run left to auto-finish.
+function DayRecordsModal({
+  dayKey,
+  onClose,
+}: {
+  dayKey: string;
+  onClose: () => void;
+}) {
+  const completions = useTimerStore((s) => s.completions);
+  const deleteCompletion = useTimerStore((s) => s.deleteCompletion);
+
+  const rows = useMemo(
+    () =>
+      completions
+        .filter((c) => dateKey(new Date(c.completedAt)) === dayKey)
+        .sort((a, b) => b.completedAt - a.completedAt),
+    [completions, dayKey],
+  );
+
+  // Auto-close once the day has no records left.
+  useEffect(() => {
+    if (rows.length === 0) onClose();
+  }, [rows.length, onClose]);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const [y, m, d] = dayKey.split("-").map(Number);
+  const heading = new Date(y, m - 1, d).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  });
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative flex flex-col w-full sm:max-w-md max-h-[88dvh] bg-surface-1 border border-border-subtle sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="닫기"
+          className="absolute right-3 top-3 z-20 h-9 w-9 rounded-full bg-surface-2 hover:bg-surface-3 flex items-center justify-center transition-colors"
+        >
+          <X size={16} />
+        </button>
+
+        <div className="overflow-y-auto overscroll-contain px-5 sm:px-6 pt-7 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <span className="text-[11px] uppercase tracking-[0.2em] text-accent">
+            History
+          </span>
+          <h2 className="mt-2 font-display text-xl font-semibold tracking-tight">
+            {heading}
+          </h2>
+          <p className="mt-1 text-[13px] text-foreground-muted">
+            {rows.length}회 완료 · 실수로 기록된 운동은 삭제할 수 있어요.
+          </p>
+
+          <ul className="mt-5 flex flex-col gap-2">
+            {rows.map((c) => (
+              <DayRow
+                key={c.id}
+                completion={c}
+                onDelete={() => deleteCompletion(c.id)}
+              />
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DayRow({
+  completion,
+  onDelete,
+}: {
+  completion: WorkoutCompletion;
+  onDelete: () => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const timeLabel = new Date(completion.completedAt).toLocaleTimeString(
+    "ko-KR",
+    { hour: "2-digit", minute: "2-digit" },
+  );
+
+  return (
+    <li className="card-premium px-4 py-3 flex items-center gap-3">
+      <span className="h-9 w-9 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0">
+        <Dumbbell size={15} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[14px] font-medium truncate">
+          {completion.routineName}
+        </p>
+        <p className="text-[12px] text-foreground-dim tabular-nums">
+          {timeLabel} · {formatDuration(completion.durationSec)}
+        </p>
+      </div>
+
+      {confirming ? (
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={onDelete}
+            className="h-8 px-3 rounded-full text-[12px] font-medium bg-danger text-white hover:brightness-110 transition-all"
+          >
+            삭제
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirming(false)}
+            className="h-8 px-3 rounded-full text-[12px] font-medium bg-surface-2 text-foreground-muted hover:bg-surface-3 transition-colors"
+          >
+            취소
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          aria-label="이 기록 삭제"
+          className="h-8 w-8 rounded-full text-foreground-dim hover:text-danger hover:bg-danger/10 flex items-center justify-center transition-colors shrink-0"
+        >
+          <Trash2 size={15} />
+        </button>
+      )}
+    </li>
   );
 }
 
