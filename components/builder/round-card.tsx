@@ -7,6 +7,8 @@ import {
   GripVertical,
   ChevronUp,
   ChevronDown,
+  Minus,
+  Plus,
   Trash2,
   Dumbbell,
   Coffee,
@@ -48,6 +50,63 @@ function clampDuration(mins: number, secs: number): number {
   const m = Math.min(60, Math.max(0, Math.floor(mins) || 0));
   const s = Math.min(59, Math.max(0, Math.floor(secs) || 0));
   return Math.min(3600, Math.max(5, m * 60 + s));
+}
+
+// Clamp a raw total (used by the +/- steppers, which roll seconds over into
+// minutes — e.g. 55s +5 → 1:00, 1:00 -5 → 0:55).
+function clampSec(total: number): number {
+  return Math.min(3600, Math.max(5, total));
+}
+
+// One unit's control: [−] [typed value] [+] with a unit label. Buttons are
+// always visible (mobile has no number-input spinners).
+function UnitStepper({
+  unit,
+  value,
+  onDec,
+  onInc,
+  onType,
+  max,
+}: {
+  unit: string;
+  value: number;
+  onDec: () => void;
+  onInc: () => void;
+  onType: (v: number) => void;
+  max: number;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        onClick={onDec}
+        aria-label={`${unit} 감소`}
+        className="h-8 w-8 shrink-0 rounded-full bg-surface-2 hover:bg-surface-3 text-foreground-muted flex items-center justify-center transition-colors"
+      >
+        <Minus size={13} />
+      </button>
+      <input
+        type="number"
+        min={0}
+        max={max}
+        inputMode="numeric"
+        value={value}
+        onChange={(e) => onType(Number(e.target.value))}
+        onFocus={(e) => e.target.select()}
+        aria-label={unit}
+        className="tabular w-10 h-9 bg-surface-2 border border-border-subtle rounded-full px-1 text-[14px] font-semibold text-foreground text-center focus:outline-none focus:border-accent/40"
+      />
+      <span className="text-foreground-dim text-[12px] w-3">{unit}</span>
+      <button
+        type="button"
+        onClick={onInc}
+        aria-label={`${unit} 증가`}
+        className="h-8 w-8 shrink-0 rounded-full bg-surface-2 hover:bg-surface-3 text-foreground-muted flex items-center justify-center transition-colors"
+      >
+        <Plus size={13} />
+      </button>
+    </div>
+  );
 }
 
 interface Props {
@@ -170,46 +229,30 @@ export function RoundCard({
         <option value="prepare">준비</option>
       </select>
 
-      {/* Duration — minutes + seconds, typed directly */}
-      <div className="flex items-center gap-1.5">
-        <input
-          type="number"
-          min={0}
-          max={60}
-          inputMode="numeric"
+      {/* Duration — minute & second steppers (rolls over at 60s) */}
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+        <UnitStepper
+          unit="분"
           value={Math.floor(round.durationSec / 60)}
-          onChange={(e) =>
-            onChange({
-              durationSec: clampDuration(
-                Number(e.target.value),
-                round.durationSec % 60,
-              ),
-            })
+          onDec={() => onChange({ durationSec: clampSec(round.durationSec - 60) })}
+          onInc={() => onChange({ durationSec: clampSec(round.durationSec + 60) })}
+          onType={(m) =>
+            onChange({ durationSec: clampDuration(m, round.durationSec % 60) })
           }
-          onFocus={(e) => e.target.select()}
-          aria-label="분"
-          className="tabular w-12 h-9 bg-surface-2 border border-border-subtle rounded-full px-2 text-[14px] font-semibold text-foreground text-center focus:outline-none focus:border-accent/40"
+          max={60}
         />
-        <span className="text-foreground-dim text-[12px]">분</span>
-        <input
-          type="number"
-          min={0}
-          max={59}
-          inputMode="numeric"
+        <UnitStepper
+          unit="초"
           value={round.durationSec % 60}
-          onChange={(e) =>
+          onDec={() => onChange({ durationSec: clampSec(round.durationSec - 5) })}
+          onInc={() => onChange({ durationSec: clampSec(round.durationSec + 5) })}
+          onType={(s) =>
             onChange({
-              durationSec: clampDuration(
-                Math.floor(round.durationSec / 60),
-                Number(e.target.value),
-              ),
+              durationSec: clampDuration(Math.floor(round.durationSec / 60), s),
             })
           }
-          onFocus={(e) => e.target.select()}
-          aria-label="초"
-          className="tabular w-12 h-9 bg-surface-2 border border-border-subtle rounded-full px-2 text-[14px] font-semibold text-foreground text-center focus:outline-none focus:border-accent/40"
+          max={59}
         />
-        <span className="text-foreground-dim text-[12px]">초</span>
       </div>
 
       {/* BPM for work rounds */}
