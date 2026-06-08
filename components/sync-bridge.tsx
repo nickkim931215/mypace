@@ -25,10 +25,19 @@ export function SyncBridge() {
     if (!configured) return;
     if (!user) {
       useSyncStore.getState().setStatus("idle");
+      // Signed out: drop any account-owned local data so the next viewer or
+      // account on this browser can't see or inherit it.
+      const s = useTimerStore.getState();
+      if (s.ownerUid !== null) s.clearForSignOut();
       return;
     }
 
     const uid = user.uid;
+    // Reconcile local data ownership BEFORE any merge/push. If localStorage
+    // still holds a different account's routines/completions (account switch on
+    // a shared browser), claimForAccount wipes them so they never merge into or
+    // leak up to this account's cloud doc.
+    useTimerStore.getState().claimForAccount(uid);
     useSyncStore.getState().setStatus("loading");
     initialAppliedRef.current = false;
 

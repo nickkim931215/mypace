@@ -57,6 +57,11 @@ interface TimerStore {
   // Private per-user log of finished runs (date-based history + streak).
   completions: WorkoutCompletion[];
 
+  // Which signed-in account this persisted store currently belongs to.
+  // null = never synced (fresh install / guest data). Used to stop one
+  // account's local data from leaking into another's on the same browser.
+  ownerUid: string | null;
+
   // Audio / settings
   masterVolume: number;
   timerVolume: number;
@@ -70,6 +75,10 @@ interface TimerStore {
   bgmMood: BgmMood;
   hypeFlavor: HypeFlavor;
   metronomeSound: MetronomeSound;
+
+  // Account lifecycle (data isolation across accounts on a shared browser).
+  claimForAccount: (uid: string) => void;
+  clearForSignOut: () => void;
 
   // Routine library
   getCurrentRoutine: () => Routine | null;
@@ -127,6 +136,7 @@ export const useTimerStore = create<TimerStore>()(
         routines: [seed],
         currentRoutineId: seed.id,
         completions: [],
+        ownerUid: null,
 
         masterVolume: 0.8,
         timerVolume: 1,
@@ -139,6 +149,36 @@ export const useTimerStore = create<TimerStore>()(
         bgmMood: "boost",
         hypeFlavor: "mild",
         metronomeSound: "wood",
+
+        claimForAccount: (uid) =>
+          set((s) => {
+            // Same account (or a reload of the same session): keep everything.
+            if (s.ownerUid === uid) return {};
+            // Guest data never synced to anyone — adopt it for this account so
+            // a first-time signer-in still seeds their cloud from local work.
+            if (s.ownerUid === null) return { ownerUid: uid };
+            // Belongs to a DIFFERENT account that was used on this browser.
+            // Drop its private data so it can't merge into / leak up to this
+            // account. Cloud is the source of truth and will repopulate.
+            const fresh = defaultRoutine();
+            return {
+              ownerUid: uid,
+              routines: [fresh],
+              currentRoutineId: fresh.id,
+              completions: [],
+            };
+          }),
+
+        clearForSignOut: () =>
+          set(() => {
+            const fresh = defaultRoutine();
+            return {
+              ownerUid: null,
+              routines: [fresh],
+              currentRoutineId: fresh.id,
+              completions: [],
+            };
+          }),
 
         getCurrentRoutine: () => {
           const { routines, currentRoutineId } = get();
