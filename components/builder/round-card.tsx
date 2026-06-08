@@ -7,8 +7,6 @@ import {
   GripVertical,
   ChevronUp,
   ChevronDown,
-  Minus,
-  Plus,
   Trash2,
   Dumbbell,
   Coffee,
@@ -43,6 +41,14 @@ const typeMeta: Record<
     icon: Hourglass,
   },
 };
+
+// Combine a minutes + seconds pair into a clamped total. Minutes 0–60, seconds
+// 0–59, total kept within 5s–60min. NaN (empty field) counts as 0.
+function clampDuration(mins: number, secs: number): number {
+  const m = Math.min(60, Math.max(0, Math.floor(mins) || 0));
+  const s = Math.min(59, Math.max(0, Math.floor(secs) || 0));
+  return Math.min(3600, Math.max(5, m * 60 + s));
+}
 
 interface Props {
   round: Round;
@@ -164,34 +170,46 @@ export function RoundCard({
         <option value="prepare">준비</option>
       </select>
 
-      {/* Duration stepper */}
-      <div className="flex items-center gap-1.5 sm:gap-2">
-        <button
-          onClick={() =>
+      {/* Duration — minutes + seconds, typed directly */}
+      <div className="flex items-center gap-1.5">
+        <input
+          type="number"
+          min={0}
+          max={60}
+          inputMode="numeric"
+          value={Math.floor(round.durationSec / 60)}
+          onChange={(e) =>
             onChange({
-              durationSec: Math.max(5, round.durationSec - 5),
+              durationSec: clampDuration(
+                Number(e.target.value),
+                round.durationSec % 60,
+              ),
             })
           }
-          className="h-9 w-9 rounded-full bg-surface-2 hover:bg-surface-3 text-foreground-muted flex items-center justify-center transition-colors"
-          aria-label="시간 감소"
-        >
-          <Minus size={14} />
-        </button>
-        <div className="tabular text-[15px] font-semibold text-foreground min-w-[56px] sm:min-w-[64px] text-center">
-          {round.durationSec}
-          <span className="text-foreground-dim text-[12px] ml-1">초</span>
-        </div>
-        <button
-          onClick={() =>
+          onFocus={(e) => e.target.select()}
+          aria-label="분"
+          className="tabular w-12 h-9 bg-surface-2 border border-border-subtle rounded-full px-2 text-[14px] font-semibold text-foreground text-center focus:outline-none focus:border-accent/40"
+        />
+        <span className="text-foreground-dim text-[12px]">분</span>
+        <input
+          type="number"
+          min={0}
+          max={59}
+          inputMode="numeric"
+          value={round.durationSec % 60}
+          onChange={(e) =>
             onChange({
-              durationSec: Math.min(3600, round.durationSec + 5),
+              durationSec: clampDuration(
+                Math.floor(round.durationSec / 60),
+                Number(e.target.value),
+              ),
             })
           }
-          className="h-9 w-9 rounded-full bg-surface-2 hover:bg-surface-3 text-foreground-muted flex items-center justify-center transition-colors"
-          aria-label="시간 증가"
-        >
-          <Plus size={14} />
-        </button>
+          onFocus={(e) => e.target.select()}
+          aria-label="초"
+          className="tabular w-12 h-9 bg-surface-2 border border-border-subtle rounded-full px-2 text-[14px] font-semibold text-foreground text-center focus:outline-none focus:border-accent/40"
+        />
+        <span className="text-foreground-dim text-[12px]">초</span>
       </div>
 
       {/* BPM for work rounds */}
