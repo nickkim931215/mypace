@@ -1,6 +1,10 @@
 import { getApps, getApp, initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, type Auth } from "firebase/auth";
-import { getFirestore, type Firestore } from "firebase/firestore";
+import {
+  getFirestore,
+  initializeFirestore,
+  type Firestore,
+} from "firebase/firestore";
 import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -40,7 +44,17 @@ export function getFirebaseAuth(): Auth {
 
 export function getDb(): Firestore {
   if (_db) return _db;
-  _db = getFirestore(getFirebaseApp());
+  const app = getFirebaseApp();
+  // ignoreUndefinedProperties: optional fields (routine description/tags, round
+  // bpm, etc.) are often undefined. Without this, setDoc THROWS on any undefined
+  // value ("Unsupported field value: undefined") — which broke routine sync for
+  // user-created routines. Drop undefined fields instead of failing the write.
+  try {
+    _db = initializeFirestore(app, { ignoreUndefinedProperties: true });
+  } catch {
+    // Firestore was already initialized for this app — reuse it.
+    _db = getFirestore(app);
+  }
   return _db;
 }
 
