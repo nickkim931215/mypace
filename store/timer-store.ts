@@ -57,6 +57,10 @@ interface TimerStore {
   // Private per-user log of finished runs (date-based history + streak).
   completions: WorkoutCompletion[];
 
+  // Target number of finished workouts per week (drives the history goal ring).
+  // Personal preference — persisted locally only, like the audio settings.
+  weeklyGoal: number;
+
   // Which signed-in account this persisted store currently belongs to.
   // null = never synced (fresh install / guest data). Used to stop one
   // account's local data from leaking into another's on the same browser.
@@ -123,7 +127,11 @@ interface TimerStore {
   setBgmMood: (m: BgmMood) => void;
   setHypeFlavor: (f: HypeFlavor) => void;
   setMetronomeSound: (s: MetronomeSound) => void;
+  setWeeklyGoal: (n: number) => void;
 }
+
+export const WEEKLY_GOAL_MIN = 1;
+export const WEEKLY_GOAL_MAX = 14;
 
 const updateRoutineTotals = (r: Routine): Routine => ({
   ...r,
@@ -139,6 +147,7 @@ export const useTimerStore = create<TimerStore>()(
         routines: [seed],
         currentRoutineId: seed.id,
         completions: [],
+        weeklyGoal: 3,
         ownerUid: null,
 
         masterVolume: 0.8,
@@ -437,6 +446,13 @@ export const useTimerStore = create<TimerStore>()(
         setBgmMood: (m) => set({ bgmMood: m }),
         setHypeFlavor: (f) => set({ hypeFlavor: f }),
         setMetronomeSound: (s) => set({ metronomeSound: s }),
+        setWeeklyGoal: (n) =>
+          set({
+            weeklyGoal: Math.min(
+              WEEKLY_GOAL_MAX,
+              Math.max(WEEKLY_GOAL_MIN, Math.round(n)),
+            ),
+          }),
       };
     },
     {

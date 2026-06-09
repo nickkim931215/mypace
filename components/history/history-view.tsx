@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { RecordShareModal } from "@/components/community/record-share-modal";
 import { RecordImageModal } from "@/components/history/record-image-modal";
+import { WeeklyGoalRing } from "@/components/history/weekly-goal-ring";
 import { formatDuration, cn } from "@/lib/utils";
 import type { WorkoutCompletion } from "@/lib/types";
 
@@ -149,6 +150,9 @@ export function HistoryView() {
           로그인하면 기록이 기기 간에 동기화돼요.
         </div>
       )}
+
+      {/* Weekly goal ring */}
+      <WeeklyGoalRing weekCount={weekCount} />
 
       {/* Stat row */}
       <div className="grid grid-cols-3 gap-3">
