@@ -19,6 +19,7 @@ import {
 } from "firebase/firestore";
 import { getDb } from "@/firebase/config";
 import { createNotification } from "@/lib/notifications";
+import { getFollowerIds } from "@/lib/follow";
 import type {
   CommunityPost,
   PostComment,
@@ -175,7 +176,32 @@ export async function createRecordPost(
     commentCount: 0,
     createdAt: serverTimestamp(),
   });
+  // Fire-and-forget: tell this user's followers they posted a workout record
+  // ("OO님이 운동을 인증했어요"). Never let a notification failure surface to the
+  // sharer — the post itself already succeeded.
+  void notifyFollowersOfRecord(ref.id, input).catch(() => {});
   return ref.id;
+}
+
+async function notifyFollowersOfRecord(
+  postId: string,
+  input: CreateRecordPostInput,
+): Promise<void> {
+  const followerIds = await getFollowerIds(input.authorId);
+  if (followerIds.length === 0) return;
+  await Promise.allSettled(
+    followerIds.map((recipientId) =>
+      createNotification({
+        recipientId,
+        type: "post",
+        postId,
+        postTitle: input.title.trim(),
+        actorId: input.authorId,
+        actorName: input.authorName,
+        actorPhotoURL: input.authorPhotoURL,
+      }),
+    ),
+  );
 }
 
 export async function deletePost(id: string): Promise<void> {

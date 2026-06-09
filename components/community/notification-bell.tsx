@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Bell, Heart, MessageCircle, CornerDownRight, Check } from "lucide-react";
+import {
+  Bell,
+  Heart,
+  MessageCircle,
+  CornerDownRight,
+  Check,
+  UserPlus,
+  Dumbbell,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import {
   subscribeNotifications,
@@ -66,6 +74,8 @@ export function NotificationBell() {
   function onItemClick(n: AppNotification) {
     if (uid && !n.read) void markNotificationRead(uid, n.id).catch(() => {});
     setOpen(false);
+    // Follow notifications have no post to open — just acknowledge them.
+    if (n.type === "follow" || !n.postId) return;
     router.push(`/community?post=${n.postId}`);
     // If we're already on /community the route won't remount, so signal the
     // feed directly to open the post.
@@ -155,7 +165,11 @@ function NotificationRow({
                 ? "님이 좋아요를 눌렀어요"
                 : n.type === "reply"
                   ? "님이 답글을 남겼어요"
-                  : "님이 댓글을 남겼어요"}
+                  : n.type === "follow"
+                    ? "님이 회원님을 팔로우했어요"
+                    : n.type === "post"
+                      ? "님이 운동을 인증했어요 💪"
+                      : "님이 댓글을 남겼어요"}
             </span>
           </p>
           {n.preview && (
@@ -164,7 +178,9 @@ function NotificationRow({
             </p>
           )}
           <p className="mt-0.5 text-[11px] text-foreground-dim truncate">
-            {n.postTitle} · {formatRelative(n.createdAt)}
+            {n.type === "follow"
+              ? formatRelative(n.createdAt)
+              : `${n.postTitle} · ${formatRelative(n.createdAt)}`}
           </p>
         </div>
         {!n.read && (
@@ -185,7 +201,15 @@ function NotifIcon({
   name: string;
 }) {
   const Badge =
-    type === "like" ? Heart : type === "reply" ? CornerDownRight : MessageCircle;
+    type === "like"
+      ? Heart
+      : type === "reply"
+        ? CornerDownRight
+        : type === "follow"
+          ? UserPlus
+          : type === "post"
+            ? Dumbbell
+            : MessageCircle;
   return (
     <span className="relative shrink-0">
       {photo ? (

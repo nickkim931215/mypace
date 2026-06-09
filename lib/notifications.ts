@@ -25,8 +25,9 @@ function notifsCol(uid: string) {
 export interface CreateNotificationInput {
   recipientId: string;
   type: NotificationType;
-  postId: string;
-  postTitle: string;
+  // Absent for "follow" notifications (no post to deep-link to).
+  postId?: string;
+  postTitle?: string;
   actorId: string;
   actorName: string;
   actorPhotoURL: string | null;
@@ -42,8 +43,8 @@ export async function createNotification(
   if (input.recipientId === input.actorId) return;
   await addDoc(notifsCol(input.recipientId), {
     type: input.type,
-    postId: input.postId,
-    postTitle: input.postTitle.slice(0, 120),
+    postId: input.postId ?? "",
+    postTitle: (input.postTitle ?? "").slice(0, 120),
     actorId: input.actorId,
     actorName: input.actorName,
     actorPhotoURL: input.actorPhotoURL,

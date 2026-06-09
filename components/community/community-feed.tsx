@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Users, LogIn, Loader2, Trophy } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus, Users, LogIn, Loader2, Trophy, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { subscribePosts, getPost } from "@/lib/community";
+import { subscribeFollowing } from "@/lib/follow";
 import type { CommunityPost, PostKind } from "@/lib/types";
+
+type FeedTab = PostKind | "following";
 import { PostCard } from "./post-card";
 import { RecordPostCard } from "./record-post-card";
 import { PostDetailModal } from "./post-detail-modal";
@@ -14,9 +17,10 @@ import { RecordShareModal } from "./record-share-modal";
 import { cn } from "@/lib/utils";
 
 export function CommunityFeed() {
-  const { state, configured, signInGoogle } = useAuth();
+  const { state, user, configured, signInGoogle } = useAuth();
   const signedIn = state.status === "signedIn";
   const canLoadFeed = configured && signedIn;
+  const myUid = user?.uid ?? null;
 
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   // Only start in the "loading" state when we're actually going to subscribe.
@@ -27,7 +31,9 @@ export function CommunityFeed() {
   const [extraPost, setExtraPost] = useState<CommunityPost | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [recordShareOpen, setRecordShareOpen] = useState(false);
-  const [tab, setTab] = useState<PostKind>("routine");
+  const [tab, setTab] = useState<FeedTab>("routine");
+  // uids the current user follows — drives the 팔로잉 tab.
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!canLoadFeed) return;
@@ -44,6 +50,12 @@ export function CommunityFeed() {
     );
     return unsub;
   }, [canLoadFeed]);
+
+  // Live set of people I follow (for the 팔로잉 tab filter).
+  useEffect(() => {
+    if (!canLoadFeed || !myUid) return;
+    return subscribeFollowing(myUid, setFollowingIds);
+  }, [canLoadFeed, myUid]);
 
   // Deep-link: open a specific post when arriving via /community?post=<id>
   // (e.g. clicking a notification). Read on mount, client-side only.
@@ -137,18 +149,28 @@ export function CommunityFeed() {
 
   const routinePosts = posts.filter((p) => p.kind !== "record");
   const recordPosts = posts.filter((p) => p.kind === "record");
+  const followingSet = useMemo(() => new Set(followingIds), [followingIds]);
+  const followingPosts = posts.filter((p) => followingSet.has(p.authorId));
   const isRecord = tab === "record";
-  const visible = isRecord ? recordPosts : routinePosts;
+  const isFollowing = tab === "following";
+  const visible = isFollowing
+    ? followingPosts
+    : isRecord
+      ? recordPosts
+      : routinePosts;
 
   return (
     <>
       {/* Tabs */}
       <div className="flex items-center gap-1 p-1 rounded-full bg-surface-2 border border-border-subtle w-fit mb-5">
-        <TabButton active={!isRecord} onClick={() => setTab("routine")}>
+        <TabButton active={tab === "routine"} onClick={() => setTab("routine")}>
           루틴 {routinePosts.length > 0 && `(${routinePosts.length})`}
         </TabButton>
         <TabButton active={isRecord} onClick={() => setTab("record")}>
           기록 {recordPosts.length > 0 && `(${recordPosts.length})`}
+        </TabButton>
+        <TabButton active={isFollowing} onClick={() => setTab("following")}>
+          팔로잉 {followingPosts.length > 0 && `(${followingPosts.length})`}
         </TabButton>
       </div>
 
@@ -156,11 +178,13 @@ export function CommunityFeed() {
         <p className="text-[13px] text-foreground-muted">
           {loading
             ? "불러오는 중..."
-            : isRecord
-              ? "다른 사람들의 운동 기록을 구경하고 응원해요."
-              : "마음에 드는 루틴은 한 번에 내 라이브러리로 가져오세요."}
+            : isFollowing
+              ? "내가 팔로우한 사람들의 새 소식이에요."
+              : isRecord
+                ? "다른 사람들의 운동 기록을 구경하고 응원해요."
+                : "마음에 드는 루틴은 한 번에 내 라이브러리로 가져오세요."}
         </p>
-        {isRecord ? (
+        {isFollowing ? null : isRecord ? (
           <Button
             variant="primary"
             size="md"
@@ -191,11 +215,22 @@ export function CommunityFeed() {
         </div>
       ) : visible.length === 0 ? (
         <EmptyState
-          title={isRecord ? "아직 공유된 기록이 없어요" : "아직 비어있어요"}
+          icon={isFollowing ? "follow" : "users"}
+          title={
+            isFollowing
+              ? followingIds.length === 0
+                ? "아직 팔로우한 사람이 없어요"
+                : "팔로우한 사람들의 새 글이 없어요"
+              : isRecord
+                ? "아직 공유된 기록이 없어요"
+                : "아직 비어있어요"
+          }
           description={
-            isRecord
-              ? "가장 먼저 내 운동 기록을 자랑해보세요."
-              : "가장 먼저 루틴을 공유해보세요."
+            isFollowing
+              ? "게시글을 열어 작성자를 팔로우하면 여기에 모여요."
+              : isRecord
+                ? "가장 먼저 내 운동 기록을 자랑해보세요."
+                : "가장 먼저 루틴을 공유해보세요."
           }
         />
       ) : (
@@ -247,14 +282,17 @@ function TabButton({
 function EmptyState({
   title,
   description,
+  icon = "users",
 }: {
   title: string;
   description: string;
+  icon?: "users" | "follow";
 }) {
+  const Icon = icon === "follow" ? UserPlus : Users;
   return (
     <div className="card-premium px-8 py-16 flex flex-col items-center text-center">
       <div className="h-14 w-14 rounded-full bg-surface-2 text-foreground-dim flex items-center justify-center">
-        <Users size={22} />
+        <Icon size={22} />
       </div>
       <h3 className="mt-5 font-display text-xl font-semibold tracking-tight">
         {title}

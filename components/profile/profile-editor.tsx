@@ -15,6 +15,7 @@ import {
   NicknameTakenError,
   NICKNAME_MAX,
 } from "@/lib/profile";
+import { getFollowCounts, type FollowCounts } from "@/lib/follow";
 
 type CheckState =
   | { kind: "idle" }
@@ -68,6 +69,18 @@ function Editor() {
   const [check, setCheck] = useState<CheckState>({ kind: "idle" });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [counts, setCounts] = useState<FollowCounts | null>(null);
+
+  // Follower/following counts (one-shot aggregation; count() can't be live).
+  useEffect(() => {
+    let alive = true;
+    getFollowCounts(uid)
+      .then((c) => alive && setCounts(c))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [uid]);
 
   // Load the current nickname once.
   useEffect(() => {
@@ -171,13 +184,17 @@ function Editor() {
             {initials}
           </span>
         )}
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[15px] font-medium truncate">{value || "—"}</p>
           {user!.email && (
             <p className="text-[12px] text-foreground-dim truncate">
               {user!.email}
             </p>
           )}
+        </div>
+        <div className="flex items-center gap-5 shrink-0 pr-1">
+          <Stat label="팔로워" value={counts?.followers} />
+          <Stat label="팔로잉" value={counts?.following} />
         </div>
       </div>
 
@@ -233,4 +250,15 @@ function Editor() {
 
 function Card({ children }: { children: React.ReactNode }) {
   return <div className="card-premium p-6 sm:p-8">{children}</div>;
+}
+
+function Stat({ label, value }: { label: string; value: number | undefined }) {
+  return (
+    <div className="text-center">
+      <p className="text-[17px] font-semibold tabular-nums leading-none">
+        {value ?? "—"}
+      </p>
+      <p className="mt-1 text-[11px] text-foreground-dim">{label}</p>
+    </div>
+  );
 }

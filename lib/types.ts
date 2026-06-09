@@ -91,8 +91,10 @@ export interface PostComment {
 }
 
 // In-app notification delivered to a post/comment author when someone interacts
-// with their content. Stored at /users/{recipientUid}/notifications/{id}.
-export type NotificationType = "like" | "comment" | "reply";
+// with their content — plus social events: "follow" (someone followed you) and
+// "post" (someone you follow shared a workout record). Stored at
+// /users/{recipientUid}/notifications/{id}.
+export type NotificationType = "like" | "comment" | "reply" | "follow" | "post";
 
 export interface AppNotification {
   id: string;

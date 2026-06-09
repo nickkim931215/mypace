@@ -27,6 +27,7 @@ import {
 } from "@/lib/community";
 import { BODY_PART_LABEL, type BodyPart } from "@/lib/ai-recommend";
 import { useProfileName } from "@/hooks/use-profile-name";
+import { FollowButton } from "./follow-button";
 import { RecordCalendarCard } from "./record-calendar-card";
 import type { CommunityPost, PostComment } from "@/lib/types";
 import { formatDuration, cn } from "@/lib/utils";
@@ -294,6 +295,7 @@ export function PostDetailModal({
                 {new Date(post.createdAt).toLocaleString("ko-KR")}
               </p>
             </div>
+            {!isOwner && <FollowButton targetUid={post.authorId} size="sm" />}
             {isOwner && !editing && (
               <div className="flex items-center gap-1">
                 <button
