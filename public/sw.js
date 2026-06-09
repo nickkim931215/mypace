@@ -1,6 +1,6 @@
-// MyPace service worker — offline shell + runtime caching + push reminders.
+// MyPace service worker — offline shell + runtime caching.
 // Bump CACHE_VERSION to invalidate old caches on deploy.
-const CACHE_VERSION = "mypace-v3";
+const CACHE_VERSION = "mypace-v4";
 const PRECACHE = `${CACHE_VERSION}-precache`;
 const RUNTIME = `${CACHE_VERSION}-runtime`;
 
@@ -77,48 +77,4 @@ self.addEventListener("fetch", (event) => {
   if (isStatic) {
     event.respondWith(handleStatic(request));
   }
-});
-
-// ── Push reminders ────────────────────────────────────────────────────────
-// Show the notification carried by a push message. Payload is JSON:
-// { title, body, url }. Falls back to sensible defaults if absent/unparseable.
-self.addEventListener("push", (event) => {
-  let payload = {};
-  try {
-    payload = event.data ? event.data.json() : {};
-  } catch {
-    payload = { body: event.data && event.data.text() };
-  }
-
-  const title = payload.title || "MyPace";
-  const options = {
-    body: payload.body || "운동할 시간이에요! 💪",
-    icon: payload.icon || "/icon.svg",
-    badge: "/icon.svg",
-    tag: payload.tag || "mypace-reminder",
-    renotify: true,
-    data: { url: payload.url || "/timer" },
-  };
-
-  event.waitUntil(self.registration.showNotification(title, options));
-});
-
-// Focus an existing tab (or open one) at the notification's target URL.
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const target = (event.notification.data && event.notification.data.url) || "/";
-
-  event.waitUntil(
-    self.clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clientList) => {
-        for (const client of clientList) {
-          if ("focus" in client) {
-            if ("navigate" in client) client.navigate(target).catch(() => {});
-            return client.focus();
-          }
-        }
-        if (self.clients.openWindow) return self.clients.openWindow(target);
-      }),
-  );
 });
