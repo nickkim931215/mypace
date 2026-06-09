@@ -151,9 +151,6 @@ export function HistoryView() {
         </div>
       )}
 
-      {/* Weekly goal ring */}
-      <WeeklyGoalRing weekCount={weekCount} />
-
       {/* Stat row */}
       <div className="grid grid-cols-3 gap-3">
         <Stat
@@ -278,6 +275,9 @@ export function HistoryView() {
           })}
         </div>
       </div>
+
+      {/* Weekly goal ring */}
+      <WeeklyGoalRing weekCount={weekCount} />
 
       {/* Recent list */}
       <div>
