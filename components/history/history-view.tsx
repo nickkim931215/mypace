@@ -20,6 +20,9 @@ import { Button } from "@/components/ui/button";
 import { RecordShareModal } from "@/components/community/record-share-modal";
 import { RecordImageModal } from "@/components/history/record-image-modal";
 import { WeeklyGoalRing } from "@/components/history/weekly-goal-ring";
+import { BadgeGrid } from "@/components/history/badge-grid";
+import { BadgeCelebration } from "@/components/history/badge-celebration";
+import { evaluateBadges, type Badge } from "@/lib/badges";
 import { formatDuration, cn } from "@/lib/utils";
 import type { WorkoutCompletion } from "@/lib/types";
 
@@ -55,6 +58,8 @@ function computeStreak(days: Set<string>): number {
 
 export function HistoryView() {
   const completions = useTimerStore((s) => s.completions);
+  const weeklyGoal = useTimerStore((s) => s.weeklyGoal);
+  const markBadgesSeen = useTimerStore((s) => s.markBadgesSeen);
   const { configured, state } = useAuth();
 
   // Store is localStorage-backed — gate on mount to avoid hydration mismatch.
@@ -64,7 +69,33 @@ export function HistoryView() {
   const [shareOpen, setShareOpen] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [celebrating, setCelebrating] = useState<Badge[]>([]);
   const signedIn = state.status === "signedIn";
+
+  // Badge progress, derived purely from the local log + weekly goal.
+  const badgeProgress = useMemo(
+    () => evaluateBadges(completions, weeklyGoal),
+    [completions, weeklyGoal],
+  );
+
+  // Detect newly-earned badges and celebrate. seenBadges === null means we've
+  // never tracked this device/account, so we baseline silently (no flood for a
+  // returning user); afterwards only genuinely new unlocks pop.
+  useEffect(() => {
+    if (!mounted) return;
+    const earned = badgeProgress.filter((p) => p.earned);
+    const earnedIds = earned.map((p) => p.badge.id);
+    const seen = useTimerStore.getState().seenBadges;
+    if (seen === null) {
+      markBadgesSeen(earnedIds);
+      return;
+    }
+    const fresh = earned.filter((p) => !seen.includes(p.badge.id));
+    if (fresh.length > 0) {
+      setCelebrating(fresh.map((p) => p.badge));
+      markBadgesSeen(earnedIds);
+    }
+  }, [mounted, badgeProgress, markBadgesSeen]);
 
   const today = useMemo(() => startOfDay(new Date()), []);
   const [cursor, setCursor] = useState(() => ({
@@ -279,6 +310,9 @@ export function HistoryView() {
       {/* Weekly goal ring */}
       <WeeklyGoalRing weekCount={weekCount} />
 
+      {/* Achievement badges */}
+      <BadgeGrid progress={badgeProgress} />
+
       {/* Recent list */}
       <div>
         <h2 className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim mb-3">
@@ -317,6 +351,12 @@ export function HistoryView() {
         <DayRecordsModal
           dayKey={selectedDay}
           onClose={() => setSelectedDay(null)}
+        />
+      )}
+      {celebrating.length > 0 && (
+        <BadgeCelebration
+          badges={celebrating}
+          onClose={() => setCelebrating([])}
         />
       )}
     </div>
