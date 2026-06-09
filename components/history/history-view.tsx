@@ -10,6 +10,7 @@ import {
   CalendarDays,
   CloudOff,
   Trophy,
+  Share2,
   X,
   Trash2,
 } from "lucide-react";
@@ -17,6 +18,7 @@ import { useTimerStore } from "@/store/timer-store";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { RecordShareModal } from "@/components/community/record-share-modal";
+import { RecordImageModal } from "@/components/history/record-image-modal";
 import { formatDuration, cn } from "@/lib/utils";
 import type { WorkoutCompletion } from "@/lib/types";
 
@@ -59,6 +61,7 @@ export function HistoryView() {
   useEffect(() => setMounted(true), []);
 
   const [shareOpen, setShareOpen] = useState(false);
+  const [imageOpen, setImageOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const signedIn = state.status === "signedIn";
 
@@ -167,16 +170,29 @@ export function HistoryView() {
         />
       </div>
 
-      {signedIn && !empty && (
-        <Button
-          variant="secondary"
-          size="md"
-          onClick={() => setShareOpen(true)}
-          className="self-stretch sm:self-start"
-        >
-          <Trophy size={15} />
-          커뮤니티에 기록 자랑하기
-        </Button>
+      {!empty && (
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => setImageOpen(true)}
+            className="self-stretch sm:self-auto"
+          >
+            <Share2 size={15} />
+            기록 이미지로 공유
+          </Button>
+          {signedIn && (
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setShareOpen(true)}
+              className="self-stretch sm:self-auto"
+            >
+              <Trophy size={15} />
+              커뮤니티에 자랑하기
+            </Button>
+          )}
+        </div>
       )}
 
       {/* Calendar */}
@@ -292,6 +308,7 @@ export function HistoryView() {
       </div>
 
       {shareOpen && <RecordShareModal onClose={() => setShareOpen(false)} />}
+      {imageOpen && <RecordImageModal onClose={() => setImageOpen(false)} />}
       {selectedDay && (
         <DayRecordsModal
           dayKey={selectedDay}
