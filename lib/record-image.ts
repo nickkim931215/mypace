@@ -12,7 +12,6 @@ const H = 1350;
 // Brand tokens (kept in sync with app/globals.css :root).
 const BG = "#0a0a0b";
 const SURFACE = "#16161a";
-const SURFACE_2 = "#1f1f25";
 const ACCENT = "#d4ff3f";
 const FG = "#fafafa";
 const FG_MUTED = "#9ca3af";
@@ -53,74 +52,113 @@ export async function renderRecordCard(
   if (!ctx) throw new Error("canvas 2d context unavailable");
   ctx.scale(dpr, dpr);
 
-  // Background + soft accent glow at the top.
+  // ── Background: deep base + two soft accent glows ──────────────────────
   ctx.fillStyle = BG;
   ctx.fillRect(0, 0, W, H);
-  const glow = ctx.createRadialGradient(W / 2, 40, 0, W / 2, 40, 720);
-  glow.addColorStop(0, "rgba(212, 255, 63, 0.16)");
-  glow.addColorStop(1, "rgba(212, 255, 63, 0)");
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, 760);
+  const topGlow = ctx.createRadialGradient(W * 0.5, -120, 0, W * 0.5, -120, 820);
+  topGlow.addColorStop(0, "rgba(212, 255, 63, 0.18)");
+  topGlow.addColorStop(1, "rgba(212, 255, 63, 0)");
+  ctx.fillStyle = topGlow;
+  ctx.fillRect(0, 0, W, 700);
+  const cornerGlow = ctx.createRadialGradient(
+    W + 80,
+    H + 80,
+    0,
+    W + 80,
+    H + 80,
+    560,
+  );
+  cornerGlow.addColorStop(0, "rgba(212, 255, 63, 0.08)");
+  cornerGlow.addColorStop(1, "rgba(212, 255, 63, 0)");
+  ctx.fillStyle = cornerGlow;
+  ctx.fillRect(W - 560, H - 560, 560, 560);
 
   const PAD = 84;
   const innerW = W - PAD * 2;
 
-  // ── Header: wordmark + streak pill ──────────────────────────────────────
+  // ── Header band: brand (left) + @nickname (right) ──────────────────────
   ctx.textBaseline = "alphabetic";
+  // accent dot
   ctx.fillStyle = ACCENT;
   ctx.beginPath();
-  ctx.arc(PAD + 9, 96, 9, 0, Math.PI * 2);
+  ctx.arc(PAD + 8, 92, 8, 0, Math.PI * 2);
   ctx.fill();
+  ctx.textAlign = "left";
   ctx.fillStyle = FG;
-  ctx.font = `700 34px ${FONT}`;
-  ctx.textAlign = "left";
-  ctx.fillText("MyPace", PAD + 30, 108);
-
-  // Streak pill, right-aligned.
-  const streakText = `${snapshot.streak}일 연속`;
-  ctx.font = `700 28px ${FONT}`;
-  const pillTextW = ctx.measureText(streakText).width;
-  const flameW = 34;
-  const pillW = pillTextW + flameW + 56;
-  const pillH = 58;
-  const pillX = W - PAD - pillW;
-  const pillY = 70;
-  rr(ctx, pillX, pillY, pillW, pillH, pillH / 2);
-  ctx.fillStyle = "rgba(212, 255, 63, 0.12)";
-  ctx.fill();
-  ctx.font = "28px sans-serif";
-  ctx.fillText("🔥", pillX + 26, pillY + 39);
-  ctx.fillStyle = ACCENT;
-  ctx.font = `700 28px ${FONT}`;
-  ctx.fillText(streakText, pillX + 26 + flameW + 6, pillY + 39);
-
-  // ── Hero: month + count ─────────────────────────────────────────────────
-  ctx.textAlign = "left";
+  ctx.font = `800 38px ${FONT}`;
+  ctx.fillText("MyPace", PAD + 28, 104);
   ctx.fillStyle = FG_DIM;
+  ctx.font = `500 22px ${FONT}`;
+  ctx.fillText("운동 인터벌 타이머", PAD + 2, 140);
+
+  // @nickname pill, right-aligned, vertically centered with the wordmark.
+  const handle = `@${nickname}`;
   ctx.font = `600 26px ${FONT}`;
-  ctx.fillText(snapshot.monthLabel.toUpperCase(), PAD, 248);
+  const handleW = ctx.measureText(handle).width;
+  const hpW = handleW + 48;
+  const hpH = 56;
+  const hpX = W - PAD - hpW;
+  const hpY = 78;
+  rr(ctx, hpX, hpY, hpW, hpH, hpH / 2);
+  ctx.fillStyle = "rgba(255,255,255,0.05)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = FG_MUTED;
+  ctx.textAlign = "center";
+  ctx.fillText(handle, hpX + hpW / 2, hpY + 37);
+
+  // gradient divider under the header
+  const divY = 184;
+  const divGrad = ctx.createLinearGradient(PAD, 0, W - PAD, 0);
+  divGrad.addColorStop(0, "rgba(212,255,63,0.5)");
+  divGrad.addColorStop(0.6, "rgba(255,255,255,0.06)");
+  divGrad.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = divGrad;
+  ctx.fillRect(PAD, divY, innerW, 2);
+
+  // ── Hero: month eyebrow + big count ────────────────────────────────────
+  ctx.textAlign = "left";
+  ctx.fillStyle = ACCENT;
+  ctx.font = `700 26px ${FONT}`;
+  ctx.fillText(snapshot.monthLabel, PAD, 268);
 
   ctx.fillStyle = FG;
-  ctx.font = `800 110px ${FONT}`;
+  ctx.font = `800 120px ${FONT}`;
   const big = `${snapshot.monthCount}`;
-  ctx.fillText(big, PAD, 360);
+  ctx.fillText(big, PAD, 384);
   const bigW = ctx.measureText(big).width;
   ctx.fillStyle = FG_MUTED;
   ctx.font = `600 46px ${FONT}`;
-  ctx.fillText("회 운동", PAD + bigW + 18, 360);
+  ctx.fillText("회 운동", PAD + bigW + 20, 384);
 
-  // ── Calendar card ───────────────────────────────────────────────────────
-  const calX = PAD;
-  const calY = 430;
-  const calW = innerW;
+  // ── Inline stats bar: 연속 · 이번 주 · 누적 ────────────────────────────
+  const statsY = 440;
+  drawStat(ctx, PAD + innerW * (1 / 6), statsY, `${snapshot.streak}`, "일 연속", true);
+  drawStat(ctx, PAD + innerW * (3 / 6), statsY, `${snapshot.weekCount}`, "이번 주", false);
+  drawStat(ctx, PAD + innerW * (5 / 6), statsY, `${snapshot.totalCount}`, "누적", false);
+  // thin separators between stats
+  ctx.fillStyle = "rgba(255,255,255,0.07)";
+  ctx.fillRect(PAD + innerW * (2 / 6), statsY - 6, 1, 56);
+  ctx.fillRect(PAD + innerW * (4 / 6), statsY - 6, 1, 56);
+
+  // ── Calendar card (always fits 6 rows within the canvas) ───────────────
+  const calY = 560;
+  const calPad = 36;
+  const headerH = 52;
+  const gap = 12;
+  const availH = H - PAD - calY; // vertical room left for the card
+  const cellByW = (innerW - calPad * 2 - gap * 6) / 7;
+  const cellByH = (availH - calPad * 2 - headerH - gap * 5) / 6; // reserve 6 rows
+  const cell = Math.floor(Math.min(cellByW, cellByH));
+
   const cells = monthGrid(snapshot.year, snapshot.month);
   const rows = Math.ceil(cells.length / 7);
-  const headerH = 56;
-  const cellGap = 12;
-  const calPad = 36;
-  const gridW = calW - calPad * 2;
-  const cellSize = (gridW - cellGap * 6) / 7;
-  const calH = calPad * 2 + headerH + rows * cellSize + (rows - 1) * cellGap;
+  const gridW = cell * 7 + gap * 6;
+  const calH = calPad * 2 + headerH + rows * cell + (rows - 1) * gap;
+  const calX = PAD;
+  const calW = innerW;
 
   rr(ctx, calX, calY, calW, calH, 32);
   ctx.fillStyle = SURFACE;
@@ -129,74 +167,44 @@ export async function renderRecordCard(
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  const gridX = calX + calPad;
+  // center the grid horizontally inside the card
+  const gridX = calX + (calW - gridW) / 2;
   const gridY = calY + calPad;
   const doneDays = new Set(snapshot.days);
 
-  // Weekday header.
+  // weekday header
   ctx.textAlign = "center";
   ctx.font = `600 24px ${FONT}`;
   for (let i = 0; i < 7; i++) {
     ctx.fillStyle = i === 0 ? "rgba(239,68,68,0.7)" : FG_DIM;
-    const cx = gridX + i * (cellSize + cellGap) + cellSize / 2;
-    ctx.fillText(WEEKDAYS[i], cx, gridY + 24);
+    const cx = gridX + i * (cell + gap) + cell / 2;
+    ctx.fillText(WEEKDAYS[i], cx, gridY + 22);
   }
 
-  // Day cells.
-  ctx.font = `600 30px ${FONT}`;
-  cells.forEach((cell, idx) => {
+  // day cells
+  cells.forEach((c, idx) => {
+    if (!c) return;
     const col = idx % 7;
     const row = Math.floor(idx / 7);
-    const x = gridX + col * (cellSize + cellGap);
-    const y = gridY + headerH + row * (cellSize + cellGap);
-    if (!cell) return;
-    const done = doneDays.has(cell.day);
+    const x = gridX + col * (cell + gap);
+    const y = gridY + headerH + row * (cell + gap);
+    const done = doneDays.has(c.day);
+    const radius = Math.min(18, cell * 0.28);
     if (done) {
-      rr(ctx, x, y, cellSize, cellSize, 18);
-      ctx.fillStyle = "rgba(212, 255, 63, 0.18)";
+      rr(ctx, x, y, cell, cell, radius);
+      ctx.fillStyle = "rgba(212, 255, 63, 0.16)";
       ctx.fill();
+      ctx.strokeStyle = "rgba(212, 255, 63, 0.45)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
     }
-    ctx.fillStyle = done ? ACCENT : FG_MUTED;
-    ctx.font = `${done ? 700 : 500} 30px ${FONT}`;
+    ctx.fillStyle = done ? ACCENT : "rgba(255,255,255,0.42)";
+    ctx.font = `${done ? 700 : 500} ${Math.round(cell * 0.34)}px ${FONT}`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(`${cell.day}`, x + cellSize / 2, y + cellSize / 2 + 2);
-    // small dot under completed days
-    if (done) {
-      ctx.beginPath();
-      ctx.arc(x + cellSize / 2, y + cellSize - 16, 4, 0, Math.PI * 2);
-      ctx.fillStyle = ACCENT;
-      ctx.fill();
-    }
+    ctx.fillText(`${c.day}`, x + cell / 2, y + cell / 2 + 1);
   });
   ctx.textBaseline = "alphabetic";
-
-  // ── Stat strip: 이번 주 / 누적 ──────────────────────────────────────────
-  const stripY = calY + calH + 36;
-  const stripH = 132;
-  const gap = 20;
-  const halfW = (innerW - gap) / 2;
-  drawStat(ctx, PAD, stripY, halfW, stripH, "이번 주", `${snapshot.weekCount}회`);
-  drawStat(
-    ctx,
-    PAD + halfW + gap,
-    stripY,
-    halfW,
-    stripH,
-    "누적 완료",
-    `${snapshot.totalCount}회`,
-  );
-
-  // ── Footer ──────────────────────────────────────────────────────────────
-  const footY = H - 70;
-  ctx.textAlign = "left";
-  ctx.fillStyle = FG;
-  ctx.font = `600 30px ${FONT}`;
-  ctx.fillText(`@${nickname}`, PAD, footY);
-  ctx.textAlign = "right";
-  ctx.fillStyle = FG_DIM;
-  ctx.font = `500 26px ${FONT}`;
-  ctx.fillText("mypace · 운동 인터벌 타이머", W - PAD, footY);
 
   return await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
@@ -207,23 +215,20 @@ export async function renderRecordCard(
   });
 }
 
+// One stat: big accent/fg value with a muted label beneath, centered on cx.
 function drawStat(
   ctx: CanvasRenderingContext2D,
-  x: number,
+  cx: number,
   y: number,
-  w: number,
-  h: number,
-  label: string,
   value: string,
+  label: string,
+  accent: boolean,
 ) {
-  rr(ctx, x, y, w, h, 26);
-  ctx.fillStyle = SURFACE_2;
-  ctx.fill();
   ctx.textAlign = "center";
-  ctx.fillStyle = FG;
-  ctx.font = `700 52px ${FONT}`;
-  ctx.fillText(value, x + w / 2, y + 70);
+  ctx.fillStyle = accent ? ACCENT : FG;
+  ctx.font = `800 44px ${FONT}`;
+  ctx.fillText(value, cx, y + 16);
   ctx.fillStyle = FG_DIM;
-  ctx.font = `500 24px ${FONT}`;
-  ctx.fillText(label, x + w / 2, y + 104);
+  ctx.font = `500 22px ${FONT}`;
+  ctx.fillText(label, cx, y + 46);
 }
