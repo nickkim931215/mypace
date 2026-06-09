@@ -61,6 +61,11 @@ interface TimerStore {
   // Personal preference — persisted locally only, like the audio settings.
   weeklyGoal: number;
 
+  // Daily workout-reminder time (local 24h). Drives the push reminder. The
+  // actual on/off state lives with the browser's push subscription, not here.
+  reminderHour: number;
+  reminderMinute: number;
+
   // Which signed-in account this persisted store currently belongs to.
   // null = never synced (fresh install / guest data). Used to stop one
   // account's local data from leaking into another's on the same browser.
@@ -128,6 +133,7 @@ interface TimerStore {
   setHypeFlavor: (f: HypeFlavor) => void;
   setMetronomeSound: (s: MetronomeSound) => void;
   setWeeklyGoal: (n: number) => void;
+  setReminderTime: (hour: number, minute: number) => void;
 }
 
 export const WEEKLY_GOAL_MIN = 1;
@@ -148,6 +154,8 @@ export const useTimerStore = create<TimerStore>()(
         currentRoutineId: seed.id,
         completions: [],
         weeklyGoal: 3,
+        reminderHour: 19,
+        reminderMinute: 0,
         ownerUid: null,
 
         masterVolume: 0.8,
@@ -452,6 +460,11 @@ export const useTimerStore = create<TimerStore>()(
               WEEKLY_GOAL_MAX,
               Math.max(WEEKLY_GOAL_MIN, Math.round(n)),
             ),
+          }),
+        setReminderTime: (hour, minute) =>
+          set({
+            reminderHour: Math.min(23, Math.max(0, Math.floor(hour))),
+            reminderMinute: Math.min(59, Math.max(0, Math.floor(minute))),
           }),
       };
     },

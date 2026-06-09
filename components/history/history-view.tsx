@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { RecordShareModal } from "@/components/community/record-share-modal";
 import { RecordImageModal } from "@/components/history/record-image-modal";
 import { WeeklyGoalRing } from "@/components/history/weekly-goal-ring";
+import { PushReminderCard } from "@/components/history/push-reminder-card";
 import { formatDuration, cn } from "@/lib/utils";
 import type { WorkoutCompletion } from "@/lib/types";
 
@@ -278,6 +279,9 @@ export function HistoryView() {
 
       {/* Weekly goal ring */}
       <WeeklyGoalRing weekCount={weekCount} />
+
+      {/* Push reminder */}
+      <PushReminderCard />
 
       {/* Recent list */}
       <div>
