@@ -17,12 +17,10 @@ import { useTimerStore } from "@/store/timer-store";
 import { useProfileName } from "@/hooks/use-profile-name";
 import { buildRecordSnapshot, startOfDay } from "@/lib/history";
 import { renderRecordCard } from "@/lib/record-image";
-import { evaluateBadges, featuredBadges } from "@/lib/badges";
 
 export function RecordImageModal({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
   const completions = useTimerStore((s) => s.completions);
-  const weeklyGoal = useTimerStore((s) => s.weeklyGoal);
   const nickname = useProfileName(
     user?.uid,
     user?.displayName ?? user?.email?.split("@")[0] ?? "mypace",
@@ -39,16 +37,6 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
     [completions, cursor],
   );
 
-  // Up to 4 of the user's most impressive earned badges, stamped on the card.
-  const cardBadges = useMemo(
-    () =>
-      featuredBadges(evaluateBadges(completions, weeklyGoal)).map((b) => ({
-        emoji: b.emoji,
-        short: b.short,
-      })),
-    [completions, weeklyGoal],
-  );
-
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [blob, setBlob] = useState<Blob | null>(null);
   const [rendering, setRendering] = useState(true);
@@ -62,7 +50,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
     setRendering(true);
     setError(null);
     setShared(false);
-    renderRecordCard(snapshot, nickname, cardBadges)
+    renderRecordCard(snapshot, nickname)
       .then((b) => {
         if (!alive) return;
         url = URL.createObjectURL(b);
@@ -80,7 +68,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
       alive = false;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [snapshot, nickname, cardBadges]);
+  }, [snapshot, nickname]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

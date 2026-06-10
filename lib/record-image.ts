@@ -31,15 +31,9 @@ function rr(
   ctx.roundRect(x, y, w, h, r);
 }
 
-export interface CardBadge {
-  emoji: string;
-  short: string;
-}
-
 export async function renderRecordCard(
   snapshot: RecordSnapshot,
   nickname: string,
-  badges: CardBadge[] = [],
 ): Promise<Blob> {
   // Make sure the brand font is ready so text doesn't draw in a fallback face.
   if (typeof document !== "undefined" && document.fonts?.ready) {
@@ -149,15 +143,8 @@ export async function renderRecordCard(
   ctx.fillRect(PAD + innerW * (2 / 6), statsY - 6, 1, 56);
   ctx.fillRect(PAD + innerW * (4 / 6), statsY - 6, 1, 56);
 
-  // ── Featured badge chips (optional) ────────────────────────────────────
-  const hasBadges = badges.length > 0;
-  if (hasBadges) {
-    drawBadgeChips(ctx, badges, W / 2, 524, innerW);
-  }
-
   // ── Calendar card (always fits 6 rows within the canvas) ───────────────
-  // Pushed down a touch when a badge row is present so it doesn't crowd.
-  const calY = hasBadges ? 596 : 560;
+  const calY = 560;
   const calPad = 36;
   const headerH = 52;
   const gap = 12;
@@ -226,52 +213,6 @@ export async function renderRecordCard(
       0.95,
     );
   });
-}
-
-// A centered row of badge pills (emoji + short label). Each pill is sized to
-// its text; the whole row is centered on cx and dropped if it would overflow.
-function drawBadgeChips(
-  ctx: CanvasRenderingContext2D,
-  badges: CardBadge[],
-  cx: number,
-  y: number,
-  maxWidth: number,
-) {
-  const chipH = 50;
-  const padX = 24;
-  const gap = 14;
-  ctx.font = `600 25px ${FONT}`;
-
-  // Measure, then keep only as many chips as fit within maxWidth.
-  const measured = badges.map((b) => {
-    const text = `${b.emoji} ${b.short}`;
-    return { text, w: ctx.measureText(text).width + padX * 2 };
-  });
-  const kept: typeof measured = [];
-  let total = 0;
-  for (const m of measured) {
-    const add = (kept.length === 0 ? 0 : gap) + m.w;
-    if (total + add > maxWidth) break;
-    kept.push(m);
-    total += add;
-  }
-  if (kept.length === 0) return;
-
-  let x = cx - total / 2;
-  for (const m of kept) {
-    rr(ctx, x, y - chipH / 2, m.w, chipH, chipH / 2);
-    ctx.fillStyle = "rgba(212, 255, 63, 0.10)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(212, 255, 63, 0.40)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    ctx.fillStyle = FG;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(m.text, x + m.w / 2, y + 1);
-    x += m.w + gap;
-  }
-  ctx.textBaseline = "alphabetic";
 }
 
 // One stat: big accent/fg value with a muted label beneath, centered on cx.

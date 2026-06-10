@@ -61,12 +61,6 @@ interface TimerStore {
   // Personal preference — persisted locally only, like the audio settings.
   weeklyGoal: number;
 
-  // Achievement-badge ids the user has already been shown the celebration for.
-  // Local-only. null = never initialized (a returning user with existing
-  // history is silently seeded so they aren't flooded; only genuinely new
-  // unlocks pop after that). See lib/badges + badge-celebration.
-  seenBadges: string[] | null;
-
   // Which signed-in account this persisted store currently belongs to.
   // null = never synced (fresh install / guest data). Used to stop one
   // account's local data from leaking into another's on the same browser.
@@ -134,7 +128,6 @@ interface TimerStore {
   setHypeFlavor: (f: HypeFlavor) => void;
   setMetronomeSound: (s: MetronomeSound) => void;
   setWeeklyGoal: (n: number) => void;
-  markBadgesSeen: (ids: string[]) => void;
 }
 
 export const WEEKLY_GOAL_MIN = 1;
@@ -155,7 +148,6 @@ export const useTimerStore = create<TimerStore>()(
         currentRoutineId: seed.id,
         completions: [],
         weeklyGoal: 3,
-        seenBadges: null,
         ownerUid: null,
 
         masterVolume: 0.8,
@@ -186,9 +178,6 @@ export const useTimerStore = create<TimerStore>()(
               routines: [fresh],
               currentRoutineId: fresh.id,
               completions: [],
-              // New account on this browser — re-seed badge tracking so they
-              // get the silent-baseline-then-celebrate behavior cleanly.
-              seenBadges: null,
             };
           }),
 
@@ -200,7 +189,6 @@ export const useTimerStore = create<TimerStore>()(
               routines: [fresh],
               currentRoutineId: fresh.id,
               completions: [],
-              seenBadges: null,
             };
           }),
 
@@ -465,7 +453,6 @@ export const useTimerStore = create<TimerStore>()(
               Math.max(WEEKLY_GOAL_MIN, Math.round(n)),
             ),
           }),
-        markBadgesSeen: (ids) => set({ seenBadges: ids }),
       };
     },
     {
