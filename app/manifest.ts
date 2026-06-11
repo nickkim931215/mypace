@@ -40,13 +40,9 @@ export default function manifest(): MetadataRoute.Manifest {
         type: "image/png",
         purpose: "maskable",
       },
-      // Scalable fallback for browsers that prefer SVG.
-      {
-        src: "/icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
-        purpose: "any",
-      },
+      // NOTE: no SVG icon here — PWABuilder's manifest validator flags
+      // image/svg+xml icons as "not a valid image content-type" and reds out
+      // the whole icons check. PNGs are all Android/Play need anyway.
     ],
     // App preview screenshots (richer install UI + required by PWABuilder /
     // Play store packaging). Narrow = phone form factor.
