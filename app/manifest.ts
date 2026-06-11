@@ -19,17 +19,33 @@ export default function manifest(): MetadataRoute.Manifest {
     dir: "ltr",
     categories: ["health", "fitness", "sports", "lifestyle"],
     icons: [
+      // Raster icons (required for TWA / Play Store / Android install).
+      {
+        src: "/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "any",
+      },
+      // Maskable: the mark sits inside the safe zone so Android can crop it to
+      // any shape (circle / squircle) without clipping.
+      {
+        src: "/icon-maskable.png",
+        sizes: "512x512",
+        type: "image/png",
+        purpose: "maskable",
+      },
+      // Scalable fallback for browsers that prefer SVG.
       {
         src: "/icon.svg",
         sizes: "any",
         type: "image/svg+xml",
         purpose: "any",
-      },
-      {
-        src: "/icon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
-        purpose: "maskable",
       },
     ],
     shortcuts: [
