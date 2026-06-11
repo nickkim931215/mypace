@@ -48,6 +48,31 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "any",
       },
     ],
+    // App preview screenshots (richer install UI + required by PWABuilder /
+    // Play store packaging). Narrow = phone form factor.
+    screenshots: [
+      {
+        src: "/screenshots/sc-1.png",
+        sizes: "1080x1920",
+        type: "image/png",
+        form_factor: "narrow",
+        label: "인터벌 운동 타이머",
+      },
+      {
+        src: "/screenshots/sc-2.png",
+        sizes: "1080x1920",
+        type: "image/png",
+        form_factor: "narrow",
+        label: "AI 부위별 루틴 추천",
+      },
+      {
+        src: "/screenshots/sc-3.png",
+        sizes: "1080x1920",
+        type: "image/png",
+        form_factor: "narrow",
+        label: "기록 · 레벨 · 커뮤니티",
+      },
+    ],
     shortcuts: [
       {
         name: "타이머 시작",
