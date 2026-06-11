@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { useTimerStore } from "@/store/timer-store";
 import { createPost, extractYoutubeId } from "@/lib/community";
+import { trackEvent } from "@/lib/analytics";
 import { BODY_PART_LABEL, type BodyPart } from "@/lib/ai-recommend";
 import { formatDuration, cn } from "@/lib/utils";
 import type { Routine } from "@/lib/types";
@@ -76,6 +77,7 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
         bodyParts,
         routine: selected,
       });
+      trackEvent("post_created", { kind: "routine" });
       onClose();
     } catch (err) {
       console.error("[community] createPost failed:", err);

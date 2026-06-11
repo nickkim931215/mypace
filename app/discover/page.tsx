@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
+import { trackEvent } from "@/lib/analytics";
 import { SiteFooter } from "@/components/site-footer";
 import { BodySelector } from "@/components/discover/body-selector";
 import { PreferencesForm } from "@/components/discover/preferences-form";
@@ -59,6 +60,12 @@ export default function DiscoverPage() {
       const data = (await res.json()) as RecommendResult;
       setResult(data);
       setStatus("ready");
+      trackEvent("recommend_requested", {
+        bodyPart,
+        intensity,
+        minutes,
+        source: data.source,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "AI 호출 실패");
       setStatus("error");

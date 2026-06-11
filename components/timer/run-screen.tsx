@@ -21,6 +21,7 @@ import { ProgressRing } from "./progress-ring";
 import { AudioPanel } from "./audio-panel";
 import { useWorkoutAudio } from "@/hooks/use-workout-audio";
 import { formatClock, cn } from "@/lib/utils";
+import { trackEvent } from "@/lib/analytics";
 import type { Routine } from "@/lib/types";
 
 interface Props {
@@ -142,6 +143,10 @@ export function RunScreen({ routine }: Props) {
     if (snapshot.status === "finished" && !completedRef.current) {
       completedRef.current = true;
       markRoutineCompleted(routine.id);
+      trackEvent("workout_completed", {
+        durationSec: routine.totalDurationSec * routine.repeat,
+        rounds: routine.rounds.length,
+      });
     } else if (snapshot.status !== "finished") {
       completedRef.current = false;
     }

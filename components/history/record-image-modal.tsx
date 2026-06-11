@@ -18,6 +18,7 @@ import { useProfileName } from "@/hooks/use-profile-name";
 import { buildRecordSnapshot, startOfDay } from "@/lib/history";
 import { renderRecordCard } from "@/lib/record-image";
 import { getLevel } from "@/lib/level";
+import { trackEvent } from "@/lib/analytics";
 
 export function RecordImageModal({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
@@ -99,6 +100,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
       try {
         await navigator.share(shareData);
         setShared(true);
+        trackEvent("record_shared", { method: "share" });
         return;
       } catch (err) {
         // User cancelled the sheet — not an error worth surfacing.
@@ -109,6 +111,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
     // Fallback: download the PNG.
     downloadBlob(blob, fileName);
     setShared(true);
+    trackEvent("record_shared", { method: "download" });
   }, [blob, fileName, snapshot]);
 
   const onDownload = useCallback(() => {

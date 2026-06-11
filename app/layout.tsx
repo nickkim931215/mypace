@@ -5,6 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { SyncBridge } from "@/components/sync-bridge";
 import { Pwa } from "@/components/pwa";
 import { UiSounds } from "@/components/ui-sounds";
+import { AnalyticsProvider } from "@/components/analytics-provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -63,6 +64,7 @@ export default function RootLayout({
         <AuthProvider>
           <SyncBridge />
           <UiSounds />
+          <AnalyticsProvider />
           {children}
           <Pwa />
         </AuthProvider>

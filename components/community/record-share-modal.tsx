@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { useTimerStore } from "@/store/timer-store";
 import { createRecordPost } from "@/lib/community";
+import { trackEvent } from "@/lib/analytics";
 import { buildRecordSnapshot, startOfDay } from "@/lib/history";
 import { RecordCalendarCard } from "./record-calendar-card";
 import { cn } from "@/lib/utils";
@@ -78,6 +79,7 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
         description: description.trim(),
         record: snapshot,
       });
+      trackEvent("post_created", { kind: "record" });
       onClose();
     } catch (err) {
       console.error("[community] createRecordPost failed:", err);
