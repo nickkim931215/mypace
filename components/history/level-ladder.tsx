@@ -38,7 +38,7 @@ export function LevelLadder({ count }: { count: number }) {
                 <span
                   className={cn(
                     "h-8 w-8 rounded-full flex items-center justify-center text-[12px] font-bold tabular-nums shrink-0 z-10 transition-colors",
-                    isUpcoming && "opacity-70",
+                    isUpcoming && !shimmer && "opacity-70",
                   )}
                   style={
                     isCurrent
@@ -47,7 +47,12 @@ export function LevelLadder({ count }: { count: number }) {
                           color: "#0a0a0b",
                           boxShadow: `0 0 0 4px ${color}33`,
                         }
-                      : { backgroundColor: `${color}26` }
+                      : shimmer
+                        ? {
+                            backgroundColor: `${color}26`,
+                            boxShadow: `0 0 10px ${color}80`,
+                          }
+                        : { backgroundColor: `${color}26` }
                   }
                 >
                   {isDone ? (
@@ -85,8 +90,8 @@ export function LevelLadder({ count }: { count: number }) {
                     className={cn(
                       "text-[14px] truncate",
                       isCurrent ? "font-semibold" : "font-medium",
-                      isUpcoming && "opacity-80",
-                      shimmer && "level-gold",
+                      isUpcoming && !shimmer && "opacity-80",
+                      shimmer && "level-gold font-bold",
                     )}
                     style={shimmer ? undefined : { color }}
                   >
