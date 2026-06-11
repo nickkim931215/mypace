@@ -11,43 +11,48 @@ interface Props {
   onSelect: (part: BodyPart) => void;
 }
 
-// Clickable muscle hotspots overlaid on the mannequin image. Coordinates are in
-// the image's own pixel space (1536×2752, front-facing full-body figure). Each
-// zone is one or more ellipses (mirrored L↔R where relevant); selecting a part
-// lights its zone with a lime glow. "back"/"full" are picked from the side menu.
+// Muscle hotspots traced to the mannequin image's own pixel space (1536×2752,
+// front-facing bodybuilder figure). Each zone is one or more SVG paths that
+// follow the actual muscle panels; selecting a part lights its muscles lime.
+// "back"/"full" are picked from the side menu.
 const IMG_W = 1536;
 const IMG_H = 2752;
 
-type Ellipse = { cx: number; cy: number; rx: number; ry: number };
-
-const ZONES: { id: BodyPart; shapes: Ellipse[] }[] = [
+const ZONES: { id: BodyPart; paths: string[] }[] = [
   {
-    id: "shoulders",
-    shapes: [
-      { cx: 582, cy: 575, rx: 90, ry: 70 },
-      { cx: 954, cy: 575, rx: 90, ry: 70 },
+    id: "chest", // pectorals (two plates)
+    paths: [
+      "M757 523 L660 498 L553 523 L520 622 L564 737 L725 770 Z",
+      "M779 523 L876 498 L983 523 L1016 622 L972 737 L811 770 Z",
     ],
   },
   {
-    id: "chest",
-    shapes: [{ cx: 768, cy: 610, rx: 170, ry: 105 }],
-  },
-  {
-    id: "arms",
-    shapes: [
-      { cx: 516, cy: 800, rx: 50, ry: 138 },
-      { cx: 1020, cy: 800, rx: 50, ry: 138 },
+    id: "shoulders", // deltoids
+    paths: [
+      "M424 465 L520 498 L520 622 L424 671 L327 605 L338 506 Z",
+      "M1112 465 L1016 498 L1016 622 L1112 671 L1209 605 L1198 506 Z",
     ],
   },
   {
-    id: "core",
-    shapes: [{ cx: 768, cy: 945, rx: 126, ry: 170 }],
+    id: "arms", // upper arms / biceps
+    paths: [
+      "M424 671 L370 721 L348 894 L359 1035 L252 1018 L230 812 L295 671 Z",
+      "M1112 671 L1166 721 L1188 894 L1177 1035 L1284 1018 L1306 812 L1241 671 Z",
+    ],
   },
   {
-    id: "legs",
-    shapes: [
-      { cx: 706, cy: 1610, rx: 86, ry: 250 },
-      { cx: 830, cy: 1610, rx: 86, ry: 250 },
+    id: "core", // abdominals + obliques
+    paths: [
+      "M768 787 L600 790 L570 990 L640 1180 L768 1220 L896 1180 L966 990 L936 790 Z",
+    ],
+  },
+  {
+    id: "legs", // quads (thighs) + calves
+    paths: [
+      "M729 1306 L433 1328 L404 1577 L453 1780 L492 1859 L689 1859 L719 1633 Z",
+      "M807 1306 L1103 1328 L1132 1577 L1083 1780 L1044 1859 L847 1859 L817 1633 Z",
+      "M512 1893 L670 1915 L630 2198 L571 2277 L512 2254 L473 2028 Z",
+      "M1024 1893 L866 1915 L906 2198 L965 2277 L1024 2254 L1063 2028 Z",
     ],
   },
 ];
@@ -61,7 +66,7 @@ export function BodySelector({ selected, onSelect }: Props) {
         style={{ aspectRatio: `${IMG_W} / ${IMG_H}` }}
       >
         <Image
-          src="/discover/mannequin.png"
+          src="/discover/mannequin2.png"
           alt="부위 선택"
           fill
           sizes="240px"
@@ -76,8 +81,8 @@ export function BodySelector({ selected, onSelect }: Props) {
           aria-hidden
         >
           <defs>
-            <filter id="zoneGlow" x="-40%" y="-40%" width="180%" height="180%">
-              <feGaussianBlur stdDeviation="14" result="blur" />
+            <filter id="zoneGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="12" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
@@ -94,21 +99,19 @@ export function BodySelector({ selected, onSelect }: Props) {
                 className="cursor-pointer group"
                 style={{ pointerEvents: "all" }}
               >
-                {z.shapes.map((s, i) => (
-                  <ellipse
+                {z.paths.map((d, i) => (
+                  <path
                     key={i}
-                    cx={s.cx}
-                    cy={s.cy}
-                    rx={s.rx}
-                    ry={s.ry}
+                    d={d}
                     fill="var(--accent)"
                     stroke="var(--accent)"
+                    strokeLinejoin="round"
                     filter={on ? "url(#zoneGlow)" : undefined}
                     className={cn(
                       "transition-all duration-200 [fill-opacity:0] [stroke-width:0]",
                       on
-                        ? "[fill-opacity:0.28] [stroke-width:7px]"
-                        : "group-hover:[fill-opacity:0.15] group-hover:[stroke-width:4px]",
+                        ? "[fill-opacity:0.44] [stroke-width:5px]"
+                        : "group-hover:[fill-opacity:0.18] group-hover:[stroke-width:3px]",
                     )}
                   />
                 ))}
