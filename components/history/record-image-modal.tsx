@@ -17,6 +17,7 @@ import { useTimerStore } from "@/store/timer-store";
 import { useProfileName } from "@/hooks/use-profile-name";
 import { buildRecordSnapshot, startOfDay } from "@/lib/history";
 import { renderRecordCard } from "@/lib/record-image";
+import { getLevel } from "@/lib/level";
 
 export function RecordImageModal({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
@@ -36,6 +37,8 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
     () => buildRecordSnapshot(completions, cursor.year, cursor.month),
     [completions, cursor],
   );
+  // All-time level (not month-scoped) — shown as a chip on the card.
+  const level = useMemo(() => getLevel(completions.length).level, [completions]);
 
   const [imgUrl, setImgUrl] = useState<string | null>(null);
   const [blob, setBlob] = useState<Blob | null>(null);
@@ -50,7 +53,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
     setRendering(true);
     setError(null);
     setShared(false);
-    renderRecordCard(snapshot, nickname)
+    renderRecordCard(snapshot, nickname, level)
       .then((b) => {
         if (!alive) return;
         url = URL.createObjectURL(b);
@@ -68,7 +71,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
       alive = false;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [snapshot, nickname]);
+  }, [snapshot, nickname, level]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

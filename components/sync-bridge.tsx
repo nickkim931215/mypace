@@ -4,6 +4,8 @@ import { useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { useTimerStore } from "@/store/timer-store";
 import { useSyncStore } from "@/store/sync-store";
+import { getLevel } from "@/lib/level";
+import { syncProfileLevel } from "@/lib/profile";
 import {
   maxUpdatedAt,
   mergeCompletions,
@@ -158,6 +160,34 @@ export function SyncBridge() {
       if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
       useSyncStore.getState().setStatus("idle");
     };
+  }, [user, configured]);
+
+  // Mirror the user's gamified level onto their PUBLIC profile whenever their
+  // workout count crosses a tier boundary, so it can show next to their
+  // nickname in the community. Deduped — only writes when the level changes,
+  // and only records success so a pre-seed race retries on the next change.
+  const lastLevelRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!configured || !user) {
+      lastLevelRef.current = null;
+      return;
+    }
+    const uid = user.uid;
+    lastLevelRef.current = null; // fresh account → always write its level once
+
+    const maybePush = async () => {
+      const count = useTimerStore.getState().completions.length;
+      const level = getLevel(count).level;
+      if (level === lastLevelRef.current) return;
+      if (await syncProfileLevel(uid, level)) lastLevelRef.current = level;
+    };
+
+    void maybePush(); // sync whatever's already loaded
+    const unsub = useTimerStore.subscribe((state, prev) => {
+      if (state.completions === prev.completions) return;
+      void maybePush();
+    });
+    return () => unsub();
   }, [user, configured]);
 
   return null;

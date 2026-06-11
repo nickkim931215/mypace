@@ -62,3 +62,28 @@ export function useProfileName(
   const entry = cache.get(uid);
   return entry?.profile?.nickname ?? fallback;
 }
+
+// Live level lookup for a uid, sharing the same ref-counted profile listener as
+// useProfileName. Returns null while loading or for profiles with no level yet.
+export function useProfileLevel(uid: string | null | undefined): number | null {
+  const [, force] = useState(0);
+
+  useEffect(() => {
+    if (!uid) return;
+    const entry = acquire(uid);
+    const notify = () => force((n) => n + 1);
+    entry.subs.add(notify);
+    notify();
+    return () => {
+      entry.subs.delete(notify);
+      if (entry.subs.size === 0) {
+        entry.unsub();
+        cache.delete(uid);
+      }
+    };
+  }, [uid]);
+
+  if (!uid) return null;
+  const entry = cache.get(uid);
+  return entry?.profile?.level ?? null;
+}

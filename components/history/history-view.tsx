@@ -6,6 +6,7 @@ import {
   Flame,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Dumbbell,
   CalendarDays,
   CloudOff,
@@ -19,7 +20,8 @@ import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { RecordShareModal } from "@/components/community/record-share-modal";
 import { RecordImageModal } from "@/components/history/record-image-modal";
-import { WeeklyGoalRing } from "@/components/history/weekly-goal-ring";
+import { LevelCard } from "@/components/history/level-card";
+import { LevelLadder } from "@/components/history/level-ladder";
 import { formatDuration, cn } from "@/lib/utils";
 import type { WorkoutCompletion } from "@/lib/types";
 
@@ -63,6 +65,7 @@ export function HistoryView() {
 
   const [shareOpen, setShareOpen] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
+  const [recentOpen, setRecentOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const signedIn = state.status === "signedIn";
 
@@ -171,6 +174,9 @@ export function HistoryView() {
         />
       </div>
 
+      {/* Level / 칭호 */}
+      <LevelCard count={completions.length} />
+
       {!empty && (
         <div className="flex flex-col sm:flex-row gap-2.5">
           <Button
@@ -276,38 +282,71 @@ export function HistoryView() {
         </div>
       </div>
 
-      {/* Weekly goal ring */}
-      <WeeklyGoalRing weekCount={weekCount} />
+      {/* Level ladder overview */}
+      <LevelLadder count={completions.length} />
 
       {/* Recent list */}
       <div>
-        <h2 className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim mb-3">
-          최근 완료
-        </h2>
         {empty ? (
-          <div className="card-premium px-8 py-14 flex flex-col items-center text-center">
-            <div className="h-14 w-14 rounded-full bg-accent/15 text-accent flex items-center justify-center">
-              <Flame size={24} />
+          <>
+            <h2 className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim mb-3">
+              최근 완료
+            </h2>
+            <div className="card-premium px-8 py-14 flex flex-col items-center text-center">
+              <div className="h-14 w-14 rounded-full bg-accent/15 text-accent flex items-center justify-center">
+                <Flame size={24} />
+              </div>
+              <h3 className="mt-5 font-display text-xl font-semibold tracking-tight">
+                첫 기록을 남겨보세요
+              </h3>
+              <p className="mt-2 text-[13px] text-foreground-muted max-w-xs leading-relaxed">
+                루틴을 끝까지 완료하면 여기에 날짜별로 쌓여요. 연속 기록을
+                이어가 보세요.
+              </p>
+              <Link href="/timer" className="mt-6">
+                <Button variant="primary" size="md">
+                  운동 시작하기
+                </Button>
+              </Link>
             </div>
-            <h3 className="mt-5 font-display text-xl font-semibold tracking-tight">
-              첫 기록을 남겨보세요
-            </h3>
-            <p className="mt-2 text-[13px] text-foreground-muted max-w-xs leading-relaxed">
-              루틴을 끝까지 완료하면 여기에 날짜별로 쌓여요. 연속 기록을
-              이어가 보세요.
-            </p>
-            <Link href="/timer" className="mt-6">
-              <Button variant="primary" size="md">
-                운동 시작하기
-              </Button>
-            </Link>
-          </div>
+          </>
         ) : (
-          <ul className="flex flex-col gap-2">
-            {sorted.slice(0, 12).map((c) => (
-              <RecentRow key={c.id} completion={c} />
-            ))}
-          </ul>
+          <>
+            <button
+              type="button"
+              onClick={() => setRecentOpen((o) => !o)}
+              aria-expanded={recentOpen}
+              className="card-premium w-full px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-surface-2 transition-colors"
+            >
+              <span className="flex items-center gap-2.5 min-w-0">
+                <span className="h-9 w-9 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0">
+                  <Dumbbell size={15} />
+                </span>
+                <span className="text-[14px] font-medium">
+                  최근 완료 운동 리스트
+                </span>
+              </span>
+              <span className="flex items-center gap-2 text-foreground-dim shrink-0">
+                <span className="text-[12px] tabular-nums">
+                  {completions.length}회
+                </span>
+                <ChevronDown
+                  size={18}
+                  className={cn(
+                    "transition-transform",
+                    recentOpen && "rotate-180",
+                  )}
+                />
+              </span>
+            </button>
+            {recentOpen && (
+              <ul className="flex flex-col gap-2 mt-2.5">
+                {sorted.map((c) => (
+                  <RecentRow key={c.id} completion={c} />
+                ))}
+              </ul>
+            )}
+          </>
         )}
       </div>
 

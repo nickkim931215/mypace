@@ -1,5 +1,6 @@
 import type { RecordSnapshot } from "@/lib/types";
 import { monthGrid, WEEKDAYS } from "@/lib/history";
+import { LEVEL_TIERS } from "@/lib/level";
 
 // Renders a shareable workout-record card as a PNG Blob, using the MyPace
 // dark + lime brand. Sized 1080×1350 (Instagram portrait) so it looks right
@@ -34,6 +35,7 @@ function rr(
 export async function renderRecordCard(
   snapshot: RecordSnapshot,
   nickname: string,
+  level?: number,
 ): Promise<Blob> {
   // Make sure the brand font is ready so text doesn't draw in a fallback face.
   if (typeof document !== "undefined" && document.fonts?.ready) {
@@ -108,6 +110,24 @@ export async function renderRecordCard(
   ctx.fillStyle = FG_MUTED;
   ctx.textAlign = "center";
   ctx.fillText(handle, hpX + hpW / 2, hpY + 37);
+
+  // Level / 칭호 accent chip, right-aligned beneath the @nickname pill.
+  if (level && level >= 1) {
+    const tier = LEVEL_TIERS[Math.min(level, LEVEL_TIERS.length) - 1];
+    const lvText = `Lv.${tier.level} · ${tier.title}`;
+    ctx.font = `700 23px ${FONT}`;
+    const lvW = ctx.measureText(lvText).width;
+    const lpW = lvW + 36;
+    const lpH = 40;
+    const lpX = W - PAD - lpW;
+    const lpY = hpY + hpH + 8;
+    rr(ctx, lpX, lpY, lpW, lpH, lpH / 2);
+    ctx.fillStyle = ACCENT;
+    ctx.fill();
+    ctx.fillStyle = BG;
+    ctx.textAlign = "center";
+    ctx.fillText(lvText, lpX + lpW / 2, lpY + 27);
+  }
 
   // gradient divider under the header
   const divY = 184;

@@ -3,6 +3,7 @@ import {
   getDoc,
   onSnapshot,
   runTransaction,
+  updateDoc,
 } from "firebase/firestore";
 import { getDb, isFirebaseConfigured } from "@/firebase/config";
 
@@ -28,6 +29,10 @@ export interface Profile {
   nicknameLower: string; // == nicknameKey(nickname); mirrors the /usernames doc id
   photoURL: string | null;
   updatedAt: number;
+  // Public gamified level (1..6), mirrored from the user's private workout
+  // count so it can show next to their nickname in the community. Optional —
+  // legacy/unseeded profiles read as "no level yet" (treated as level 1).
+  level?: number;
 }
 
 export const NICKNAME_MIN = 2;
@@ -236,6 +241,8 @@ export async function setNickname(uid: string, raw: string): Promise<string> {
     const photoURL = prof.exists()
       ? ((prof.data() as Profile).photoURL ?? null)
       : null;
+    // Carry the level forward — this full-doc set would otherwise wipe it.
+    const level = prof.exists() ? (prof.data() as Profile).level : undefined;
 
     // Same key (e.g. only changed casing/spacing) — no registry swap needed.
     if (oldKey === key) {
@@ -245,6 +252,7 @@ export async function setNickname(uid: string, raw: string): Promise<string> {
         nicknameLower: key,
         photoURL,
         updatedAt: Date.now(),
+        ...(level !== undefined ? { level } : {}),
       } satisfies Profile);
       return;
     }
@@ -262,8 +270,28 @@ export async function setNickname(uid: string, raw: string): Promise<string> {
       nicknameLower: key,
       photoURL,
       updatedAt: Date.now(),
+      ...(level !== undefined ? { level } : {}),
     } satisfies Profile);
   });
 
   return nickname;
+}
+
+// Best-effort: mirror the user's current level (1..6) onto their PUBLIC profile
+// so it can show next to their nickname in the community. Only patches the
+// `level` field of an existing profile — never creates the doc (that would skip
+// the unique-nickname seeding in ensureProfile). Silently no-ops if the profile
+// isn't seeded yet or we're offline; the next workout will retry.
+export async function syncProfileLevel(
+  uid: string,
+  level: number,
+): Promise<boolean> {
+  if (!isFirebaseConfigured()) return false;
+  try {
+    await updateDoc(profileRef(uid), { level });
+    return true;
+  } catch {
+    /* profile not seeded yet / offline — retried on the next level change */
+    return false;
+  }
 }
