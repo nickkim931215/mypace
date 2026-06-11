@@ -153,6 +153,7 @@ function Editor() {
       setSaved(true);
       setCheck({ kind: "idle" });
     } catch (err) {
+      console.error("[profile] setNickname failed:", err);
       const message =
         err instanceof NicknameTakenError || err instanceof NicknameInvalidError
           ? err.message

@@ -234,6 +234,7 @@ export async function setNickname(uid: string, raw: string): Promise<string> {
   const db = getDb();
 
   await runTransaction(db, async (tx) => {
+    // ── All reads first (Firestore requires reads before writes) ──────────
     const prof = await tx.get(profileRef(uid));
     const oldKey = prof.exists()
       ? (prof.data() as Profile).nicknameLower
@@ -244,26 +245,27 @@ export async function setNickname(uid: string, raw: string): Promise<string> {
     // Carry the level forward — this full-doc set would otherwise wipe it.
     const level = prof.exists() ? (prof.data() as Profile).level : undefined;
 
-    // Same key (e.g. only changed casing/spacing) — no registry swap needed.
-    if (oldKey === key) {
-      tx.set(profileRef(uid), {
-        uid,
-        nickname,
-        nicknameLower: key,
-        photoURL,
-        updatedAt: Date.now(),
-        ...(level !== undefined ? { level } : {}),
-      } satisfies Profile);
-      return;
+    const swapping = oldKey !== key;
+    const newReg = swapping ? await tx.get(usernameRef(key)) : null;
+    const oldReg =
+      swapping && oldKey ? await tx.get(usernameRef(oldKey)) : null;
+
+    // ── Then writes ───────────────────────────────────────────────────────
+    if (swapping) {
+      if (newReg!.exists()) {
+        // Held by someone else → taken. Held by US already (a prior partial
+        // save) → leave it as-is; re-setting it would be a forbidden update.
+        if (newReg!.data().uid !== uid) throw new NicknameTakenError();
+      } else {
+        tx.set(usernameRef(key), { uid }); // free → claim (create)
+      }
+      // Release the old key ONLY if it still exists and is actually ours —
+      // deleting a missing / foreign doc would be rejected by the rules.
+      if (oldReg && oldReg.exists() && oldReg.data().uid === uid) {
+        tx.delete(usernameRef(oldKey!));
+      }
     }
 
-    const taken = await tx.get(usernameRef(key));
-    if (taken.exists() && taken.data().uid !== uid) {
-      throw new NicknameTakenError();
-    }
-
-    tx.set(usernameRef(key), { uid });
-    if (oldKey) tx.delete(usernameRef(oldKey));
     tx.set(profileRef(uid), {
       uid,
       nickname,
