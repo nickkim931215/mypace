@@ -2,8 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Check, Loader2, UserRound, AlertCircle } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Check,
+  Loader2,
+  UserRound,
+  AlertCircle,
+  AlertTriangle,
+} from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { deleteAccount } from "@/lib/account";
 import { Button } from "@/components/ui/button";
 import {
   assertValidNickname,
@@ -169,6 +178,7 @@ function Editor() {
     loaded && !unchanged && !saving && check.kind !== "error" && check.kind !== "checking";
 
   return (
+    <div className="flex flex-col gap-5">
     <Card>
       <div className="flex items-center gap-4">
         {photo ? (
@@ -245,6 +255,106 @@ function Editor() {
           </span>
         ) : null}
       </div>
+    </Card>
+
+    <AccountDeleteCard />
+    </div>
+  );
+}
+
+// Danger zone: permanently delete the account + all personal data. Required by
+// Google Play for apps with sign-in.
+function AccountDeleteCard() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [phase, setPhase] = useState<"idle" | "confirm" | "deleting" | "error">(
+    "idle",
+  );
+  const [message, setMessage] = useState("");
+
+  async function onDelete() {
+    if (!user || phase === "deleting") return;
+    setPhase("deleting");
+    try {
+      await deleteAccount(user);
+      // Auth state flips to signed-out on its own; leave the profile page.
+      router.replace("/");
+    } catch (err) {
+      console.error("[account] delete failed:", err);
+      const code = (err as { code?: string }).code;
+      setMessage(
+        code === "auth/popup-closed-by-user" ||
+          code === "auth/cancelled-popup-request"
+          ? "재인증이 취소됐어요. 다시 시도해주세요."
+          : "삭제에 실패했어요. 다시 로그인한 뒤 시도하거나 문의해주세요.",
+      );
+      setPhase("error");
+    }
+  }
+
+  const busy = phase === "deleting";
+
+  return (
+    <Card>
+      <div className="flex items-center gap-2 text-danger">
+        <AlertTriangle size={16} />
+        <h3 className="text-[14px] font-semibold">계정 삭제</h3>
+      </div>
+      <p className="mt-2 text-[13px] text-foreground-muted leading-relaxed">
+        계정을 삭제하면 프로필·닉네임·운동 기록·루틴·작성한 글·팔로우·알림이
+        모두 영구 삭제돼요. 되돌릴 수 없어요.
+      </p>
+      <Link
+        href="/account-deletion"
+        className="mt-1.5 inline-block text-[12px] text-foreground-dim underline underline-offset-2 hover:text-foreground"
+      >
+        삭제되는 데이터 자세히 보기
+      </Link>
+
+      {phase === "error" && (
+        <p className="mt-3 flex items-start gap-1.5 text-[12px] text-danger">
+          <AlertCircle size={13} className="mt-0.5 shrink-0" />
+          {message}
+        </p>
+      )}
+
+      {phase === "confirm" || phase === "deleting" ? (
+        <div className="mt-4 rounded-2xl border border-danger/30 bg-danger/10 p-4">
+          <p className="text-[13px] text-foreground">
+            정말 계정을 삭제할까요? 이 작업은 되돌릴 수 없어요.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={busy}
+              className="h-10 px-4 rounded-xl text-[13px] font-semibold bg-danger text-white hover:brightness-110 transition-all disabled:opacity-60 inline-flex items-center gap-1.5"
+            >
+              {busy && <Loader2 size={14} className="animate-spin" />}
+              {busy ? "삭제 중…" : "영구 삭제"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPhase("idle")}
+              disabled={busy}
+              className="h-10 px-4 rounded-xl text-[13px] font-medium bg-surface-2 text-foreground-muted hover:bg-surface-3 transition-colors disabled:opacity-60"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => {
+            setPhase("confirm");
+            setMessage("");
+          }}
+          className="mt-4 h-10 px-4 rounded-xl text-[13px] font-semibold border border-danger/40 text-danger hover:bg-danger/10 transition-colors"
+        >
+          계정 삭제
+        </button>
+      )}
     </Card>
   );
 }
