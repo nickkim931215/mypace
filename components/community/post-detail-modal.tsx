@@ -29,6 +29,7 @@ import { BODY_PART_LABEL, type BodyPart } from "@/lib/ai-recommend";
 import { useProfileName } from "@/hooks/use-profile-name";
 import { FollowButton } from "./follow-button";
 import { LevelBadge } from "./level-badge";
+import { LevelName } from "./level-name";
 import { RecordCalendarCard } from "./record-calendar-card";
 import type { CommunityPost, PostComment } from "@/lib/types";
 import { formatDuration, cn } from "@/lib/utils";
@@ -292,7 +293,7 @@ export function PostDetailModal({
             />
             <div className="min-w-0 flex-1">
               <p className="text-[13px] font-medium flex items-center gap-1.5 flex-wrap">
-                {postAuthorName}
+                <LevelName uid={post.authorId} name={postAuthorName} />
                 <LevelBadge uid={post.authorId} withTitle />
               </p>
               <p className="text-[11px] text-foreground-dim">
@@ -659,7 +660,7 @@ function CommentRow({
       <Avatar photo={c.authorPhotoURL} name={name} size={small ? 22 : 26} />
       <div className="min-w-0 flex-1">
         <p className="text-[12px] flex items-center gap-1.5 flex-wrap">
-          <span className="font-medium">{name}</span>
+          <LevelName uid={c.authorId} name={name} className="font-medium" />
           <LevelBadge uid={c.authorId} />
           <span className="text-foreground-dim">
             {formatRelative(c.createdAt)}

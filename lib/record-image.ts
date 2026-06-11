@@ -1,6 +1,6 @@
 import type { RecordSnapshot } from "@/lib/types";
 import { monthGrid, WEEKDAYS } from "@/lib/history";
-import { LEVEL_TIERS } from "@/lib/level";
+import { LEVEL_TIERS, levelColor } from "@/lib/level";
 
 // Renders a shareable workout-record card as a PNG Blob, using the MyPace
 // dark + lime brand. Sized 1080×1350 (Instagram portrait) so it looks right
@@ -107,11 +107,11 @@ export async function renderRecordCard(
   ctx.strokeStyle = "rgba(255,255,255,0.08)";
   ctx.lineWidth = 1;
   ctx.stroke();
-  ctx.fillStyle = FG_MUTED;
+  ctx.fillStyle = level ? levelColor(level) : FG_MUTED;
   ctx.textAlign = "center";
   ctx.fillText(handle, hpX + hpW / 2, hpY + 37);
 
-  // Level / 칭호 accent chip, right-aligned beneath the @nickname pill.
+  // Level / 칭호 chip (tinted by level color), right-aligned under the @nickname.
   if (level && level >= 1) {
     const tier = LEVEL_TIERS[Math.min(level, LEVEL_TIERS.length) - 1];
     const lvText = `Lv.${tier.level} · ${tier.title}`;
@@ -122,7 +122,16 @@ export async function renderRecordCard(
     const lpX = W - PAD - lpW;
     const lpY = hpY + hpH + 8;
     rr(ctx, lpX, lpY, lpW, lpH, lpH / 2);
-    ctx.fillStyle = ACCENT;
+    if (level >= LEVEL_TIERS.length) {
+      // Gold tier → metallic gradient fill.
+      const g = ctx.createLinearGradient(lpX, 0, lpX + lpW, 0);
+      g.addColorStop(0, "#a8791a");
+      g.addColorStop(0.5, "#fff7cc");
+      g.addColorStop(1, "#ffd700");
+      ctx.fillStyle = g;
+    } else {
+      ctx.fillStyle = tier.color;
+    }
     ctx.fill();
     ctx.fillStyle = BG;
     ctx.textAlign = "center";

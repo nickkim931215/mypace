@@ -1,11 +1,11 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { LEVEL_TIERS, getLevel } from "@/lib/level";
+import { LEVEL_TIERS, getLevel, isShimmerLevel } from "@/lib/level";
 import { cn } from "@/lib/utils";
 
-// A compact, pretty overview of the whole 6-tier level ladder — current tier
-// highlighted, cleared tiers checked, upcoming tiers muted. Pure text (no art).
+// A compact, pretty overview of the whole 6-tier level ladder — each tier shown
+// in its own color, current tier highlighted, cleared tiers checked.
 export function LevelLadder({ count }: { count: number }) {
   const current = getLevel(count).level;
 
@@ -26,7 +26,10 @@ export function LevelLadder({ count }: { count: number }) {
           const range = next ? `${tier.min}~${next.min - 1}회` : `${tier.min}회+`;
           const isCurrent = tier.level === current;
           const isDone = tier.level < current;
+          const isUpcoming = tier.level > current;
           const isLast = i === LEVEL_TIERS.length - 1;
+          const shimmer = isShimmerLevel(tier.level);
+          const color = tier.color;
 
           return (
             <li key={tier.level} className="flex items-stretch gap-3">
@@ -35,21 +38,37 @@ export function LevelLadder({ count }: { count: number }) {
                 <span
                   className={cn(
                     "h-8 w-8 rounded-full flex items-center justify-center text-[12px] font-bold tabular-nums shrink-0 z-10 transition-colors",
-                    isCurrent
-                      ? "bg-accent text-background ring-4 ring-accent/20"
-                      : isDone
-                        ? "bg-accent/15 text-accent"
-                        : "bg-surface-3 text-foreground-dim",
+                    isUpcoming && "opacity-70",
                   )}
+                  style={
+                    isCurrent
+                      ? {
+                          backgroundColor: color,
+                          color: "#0a0a0b",
+                          boxShadow: `0 0 0 4px ${color}33`,
+                        }
+                      : { backgroundColor: `${color}26` }
+                  }
                 >
-                  {isDone ? <Check size={14} strokeWidth={2.5} /> : tier.level}
+                  {isDone ? (
+                    <Check size={14} strokeWidth={2.5} style={{ color }} />
+                  ) : isCurrent ? (
+                    tier.level
+                  ) : (
+                    <span
+                      className={shimmer ? "level-gold" : undefined}
+                      style={shimmer ? undefined : { color }}
+                    >
+                      {tier.level}
+                    </span>
+                  )}
                 </span>
                 {!isLast && (
                   <span
-                    className={cn(
-                      "w-0.5 flex-1 my-1 rounded-full",
-                      isDone ? "bg-accent/30" : "bg-surface-3",
-                    )}
+                    className="w-0.5 flex-1 my-1 rounded-full"
+                    style={{
+                      backgroundColor: isDone ? `${color}4d` : "var(--surface-3)",
+                    }}
                   />
                 )}
               </div>
@@ -64,13 +83,12 @@ export function LevelLadder({ count }: { count: number }) {
                 <div className="min-w-0">
                   <p
                     className={cn(
-                      "text-[14px] font-medium truncate",
-                      isCurrent
-                        ? "text-accent"
-                        : isDone
-                          ? "text-foreground"
-                          : "text-foreground-muted",
+                      "text-[14px] truncate",
+                      isCurrent ? "font-semibold" : "font-medium",
+                      isUpcoming && "opacity-80",
+                      shimmer && "level-gold",
                     )}
+                    style={shimmer ? undefined : { color }}
                   >
                     {tier.title}
                   </p>
@@ -79,7 +97,10 @@ export function LevelLadder({ count }: { count: number }) {
                   </p>
                 </div>
                 {isCurrent && (
-                  <span className="shrink-0 text-[10px] font-semibold text-accent bg-accent/15 rounded-full px-2 py-0.5">
+                  <span
+                    className="shrink-0 text-[10px] font-semibold rounded-full px-2 py-0.5"
+                    style={{ backgroundColor: `${color}26`, color }}
+                  >
                     현재
                   </span>
                 )}

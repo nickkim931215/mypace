@@ -160,6 +160,29 @@ body {
     0 10px 40px -10px var(--accent-glow);
 }
 
+/* Level 6 (gold) shimmering text — sweeping highlight across a gold gradient */
+@keyframes level-gold-shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+.level-gold {
+  background-image: linear-gradient(
+    100deg,
+    #a8791a 0%,
+    #ffd700 25%,
+    #fff7cc 50%,
+    #ffd700 75%,
+    #a8791a 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: level-gold-shimmer 2.2s linear infinite;
+}
+
 /* Hide scrollbar but allow scrolling */
 .scroll-hide::-webkit-scrollbar {
   display: none;

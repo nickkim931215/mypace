@@ -6,16 +6,31 @@ export interface LevelTier {
   level: number; // 1..6
   title: string; // 칭호
   min: number; // workout count needed to reach this tier
+  color: string; // tier color (hex) — tints nickname, badge, ring, etc.
 }
 
 export const LEVEL_TIERS: LevelTier[] = [
-  { level: 1, title: "숨쉬기운동 달인", min: 0 },
-  { level: 2, title: "펄럭이는 종이인형", min: 5 },
-  { level: 3, title: "땀방울 수집가", min: 20 },
-  { level: 4, title: "태릉인 유망주", min: 50 },
-  { level: 5, title: "걸어다니는 조각상", min: 100 },
-  { level: 6, title: "최종 병기", min: 200 },
+  { level: 1, title: "숨쉬기운동 달인", min: 0, color: "#ffffff" }, // 흰색
+  { level: 2, title: "펄럭이는 종이인형", min: 5, color: "#facc15" }, // 노란색
+  { level: 3, title: "땀방울 수집가", min: 20, color: "#d4ff3f" }, // 라임색
+  { level: 4, title: "태릉인 유망주", min: 50, color: "#3b82f6" }, // 파란색
+  { level: 5, title: "걸어다니는 조각상", min: 100, color: "#a855f7" }, // 보라색
+  { level: 6, title: "최종 병기", min: 200, color: "#ffd700" }, // 금색 (번쩍)
 ];
+
+// The top tier (gold) gets the shimmering animation.
+export const SHIMMER_LEVEL = LEVEL_TIERS.length; // 6
+
+// Color for a given level number (clamped to a real tier).
+export function levelColor(level: number): string {
+  const idx = Math.min(Math.max(level, 1), LEVEL_TIERS.length) - 1;
+  return LEVEL_TIERS[idx].color;
+}
+
+// Does this level use the gold shimmer treatment?
+export function isShimmerLevel(level: number): boolean {
+  return level >= SHIMMER_LEVEL;
+}
 
 export interface LevelInfo {
   level: number; // 1..6
