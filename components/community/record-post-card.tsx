@@ -2,6 +2,9 @@
 
 import { Heart, MessageCircle, Trophy, Flame } from "lucide-react";
 import type { CommunityPost } from "@/lib/types";
+import { useProfileName } from "@/hooks/use-profile-name";
+import { LevelName } from "@/components/community/level-name";
+import { LevelBadge } from "@/components/community/level-badge";
 
 export function RecordPostCard({
   post,
@@ -11,6 +14,7 @@ export function RecordPostCard({
   onOpen: (id: string) => void;
 }) {
   const record = post.record;
+  const authorName = useProfileName(post.authorId, post.authorName);
   if (!record) return null;
 
   return (
@@ -30,6 +34,15 @@ export function RecordPostCard({
 
       {/* Summary */}
       <div className="min-w-0 flex-1 flex flex-col gap-1">
+        <div className="flex items-center gap-1 min-w-0">
+          <LevelName
+            uid={post.authorId}
+            name={authorName}
+            className="text-[11px] font-medium text-foreground-muted truncate"
+          />
+          <LevelBadge uid={post.authorId} />
+        </div>
+
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-accent/12 text-accent text-[10px] font-medium shrink-0">
             <Trophy size={10} />

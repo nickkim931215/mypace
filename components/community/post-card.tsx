@@ -6,6 +6,9 @@ import type { CommunityPost } from "@/lib/types";
 import { youtubeThumbnail } from "@/lib/community";
 import { BODY_PART_LABEL, type BodyPart } from "@/lib/ai-recommend";
 import { formatDuration } from "@/lib/utils";
+import { useProfileName } from "@/hooks/use-profile-name";
+import { LevelName } from "@/components/community/level-name";
+import { LevelBadge } from "@/components/community/level-badge";
 
 export function PostCard({
   post,
@@ -18,6 +21,7 @@ export function PostCard({
   const totalSec = routine ? routine.totalDurationSec * routine.repeat : 0;
   const workRounds =
     routine?.rounds.filter((r) => r.type === "work").length ?? 0;
+  const authorName = useProfileName(post.authorId, post.authorName);
 
   return (
     <button
@@ -50,6 +54,15 @@ export function PostCard({
 
       {/* Summary */}
       <div className="min-w-0 flex-1 flex flex-col gap-1">
+        <div className="flex items-center gap-1 min-w-0">
+          <LevelName
+            uid={post.authorId}
+            name={authorName}
+            className="text-[11px] font-medium text-foreground-muted truncate"
+          />
+          <LevelBadge uid={post.authorId} />
+        </div>
+
         <h3 className="text-[14px] sm:text-[15px] font-semibold tracking-tight truncate">
           {post.title}
         </h3>

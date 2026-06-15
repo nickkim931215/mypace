@@ -1,10 +1,10 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { LEVEL_TIERS, getLevel, isShimmerLevel } from "@/lib/level";
+import { LEVEL_TIERS, getLevel, isShimmerLevel, shimmerClass } from "@/lib/level";
 import { cn } from "@/lib/utils";
 
-// A compact, pretty overview of the whole 6-tier level ladder — each tier shown
+// A compact, pretty overview of the whole 7-tier level ladder — each tier shown
 // in its own color, current tier highlighted, cleared tiers checked.
 export function LevelLadder({ count }: { count: number }) {
   const current = getLevel(count).level;
@@ -16,7 +16,7 @@ export function LevelLadder({ count }: { count: number }) {
           레벨 사다리
         </h2>
         <span className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim">
-          6단계
+          7단계
         </span>
       </div>
 
@@ -29,6 +29,7 @@ export function LevelLadder({ count }: { count: number }) {
           const isUpcoming = tier.level > current;
           const isLast = i === LEVEL_TIERS.length - 1;
           const shimmer = isShimmerLevel(tier.level);
+          const shimClass = shimmerClass(tier.level);
           const color = tier.color;
 
           return (
@@ -61,7 +62,7 @@ export function LevelLadder({ count }: { count: number }) {
                     tier.level
                   ) : (
                     <span
-                      className={shimmer ? "level-gold" : undefined}
+                      className={shimClass ?? undefined}
                       style={shimmer ? undefined : { color }}
                     >
                       {tier.level}
@@ -91,7 +92,7 @@ export function LevelLadder({ count }: { count: number }) {
                       "text-[14px] truncate",
                       isCurrent ? "font-semibold" : "font-medium",
                       isUpcoming && !shimmer && "opacity-80",
-                      shimmer && "level-gold font-bold",
+                      shimmer && cn(shimClass, "font-bold"),
                     )}
                     style={shimmer ? undefined : { color }}
                   >

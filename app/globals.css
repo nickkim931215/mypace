@@ -194,6 +194,36 @@ body {
     level-gold-glow 1.8s ease-in-out infinite;
 }
 
+/* Level 6 (인간 병기 / green) — same sweeping shimmer + glow as gold, green
+   tones. Brighter green highlight in the middle so it reads clearly green. */
+@keyframes level-green-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 3px rgba(34, 197, 94, 0.45));
+  }
+  50% {
+    filter: drop-shadow(0 0 11px rgba(34, 197, 94, 0.95));
+  }
+}
+.level-green {
+  background-image: linear-gradient(
+    100deg,
+    #15803d 0%,
+    #22c55e 16%,
+    #86efac 50%,
+    #22c55e 84%,
+    #15803d 100%
+  );
+  background-size: 220% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation:
+    level-gold-shimmer 1.5s linear infinite,
+    level-green-glow 1.8s ease-in-out infinite;
+}
+
 /* Hide scrollbar but allow scrolling */
 .scroll-hide::-webkit-scrollbar {
   display: none;

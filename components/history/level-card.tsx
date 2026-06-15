@@ -1,6 +1,6 @@
 "use client";
 
-import { getLevel, levelColor, isShimmerLevel } from "@/lib/level";
+import { getLevel, levelColor, isShimmerLevel, shimmerClass } from "@/lib/level";
 import { cn } from "@/lib/utils";
 
 // Level / 칭호 card for the history page. Pure text + XP bar (no character art),
@@ -11,6 +11,7 @@ export function LevelCard({ count }: { count: number }) {
   const barWidth = lv.isMax ? 100 : Math.max(pct, 4);
   const color = levelColor(lv.level);
   const shimmer = isShimmerLevel(lv.level);
+  const shimClass = shimmerClass(lv.level);
 
   return (
     <div className="card-premium p-5 sm:p-6">
@@ -25,7 +26,7 @@ export function LevelCard({ count }: { count: number }) {
           <h2
             className={cn(
               "mt-1 font-display text-2xl font-semibold tracking-tight truncate",
-              shimmer && "level-gold",
+              shimmer && shimClass,
             )}
             style={shimmer ? undefined : { color }}
           >
@@ -39,7 +40,7 @@ export function LevelCard({ count }: { count: number }) {
           <span
             className={cn(
               "font-display text-2xl font-bold leading-none tabular-nums",
-              shimmer && "level-gold",
+              shimmer && shimClass,
             )}
             style={shimmer ? undefined : { color }}
           >
