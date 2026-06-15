@@ -204,7 +204,11 @@ export function CommunityFeed() {
         )}
       </div>
 
-      {isFollowing && <UserSearch />}
+      {isFollowing && (
+        <div className="mb-5">
+          <UserSearch />
+        </div>
+      )}
 
       {error && (
         <div className="card-premium px-5 py-4 mb-6 text-[13px] text-danger">

@@ -20,7 +20,7 @@ export default function ProfilePage() {
             내 프로필.
           </h1>
           <p className="mt-4 text-foreground-muted text-[15px] leading-relaxed">
-            커뮤니티에 표시되는 닉네임을 정해보세요. 닉네임은 중복될 수 없어요.
+            커뮤니티에 표시되는 닉네임·연령대·성별을 설정하세요. 닉네임은 중복될 수 없어요.
           </p>
         </section>
 

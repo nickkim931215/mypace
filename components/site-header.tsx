@@ -13,6 +13,7 @@ const NAV = [
   { href: "/discover", label: "AI 추천", short: "AI추천" },
   { href: "/community", label: "커뮤니티", short: "커뮤니티" },
   { href: "/history", label: "내 기록", short: "내기록" },
+  { href: "/profile", label: "프로필", short: "프로필" },
   { href: "/advertise", label: "광고문의", short: "광고문의" },
 ];
 

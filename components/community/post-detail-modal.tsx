@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   X,
   Heart,
@@ -286,20 +287,25 @@ export function PostDetailModal({
 
         <div className="px-5 sm:px-8 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] flex flex-col gap-6">
           <header className="flex items-start gap-3">
-            <Avatar
-              photo={post.authorPhotoURL}
-              name={postAuthorName}
-              size={36}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-medium flex items-center gap-1.5 flex-wrap">
-                <LevelName uid={post.authorId} name={postAuthorName} />
-                <LevelBadge uid={post.authorId} withTitle />
-              </p>
-              <p className="text-[11px] text-foreground-dim">
-                {new Date(post.createdAt).toLocaleString("ko-KR")}
-              </p>
-            </div>
+            <Link
+              href={`/u/${post.authorId}`}
+              className="flex items-start gap-3 min-w-0 flex-1"
+            >
+              <Avatar
+                photo={post.authorPhotoURL}
+                name={postAuthorName}
+                size={36}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-medium flex items-center gap-1.5 flex-wrap">
+                  <LevelName uid={post.authorId} name={postAuthorName} />
+                  <LevelBadge uid={post.authorId} withTitle />
+                </p>
+                <p className="text-[11px] text-foreground-dim">
+                  {new Date(post.createdAt).toLocaleString("ko-KR")}
+                </p>
+              </div>
+            </Link>
             {!isOwner && <FollowButton targetUid={post.authorId} size="sm" />}
             {isOwner && !editing && (
               <div className="flex items-center gap-1">

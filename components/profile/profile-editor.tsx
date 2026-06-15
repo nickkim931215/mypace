@@ -20,11 +20,20 @@ import {
   getProfile,
   isNicknameAvailable,
   setNickname,
+  updateProfileMeta,
   NicknameInvalidError,
   NicknameTakenError,
   NICKNAME_MAX,
+  AGE_RANGES,
+  AGE_RANGE_LABEL,
+  GENDERS,
+  GENDER_LABEL,
+  type AgeRange,
+  type Gender,
 } from "@/lib/profile";
+import { cn } from "@/lib/utils";
 import { getFollowCounts, type FollowCounts } from "@/lib/follow";
+import { UserSearch } from "@/components/community/user-search";
 
 type CheckState =
   | { kind: "idle" }
@@ -79,6 +88,8 @@ function Editor() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [counts, setCounts] = useState<FollowCounts | null>(null);
+  const [ageRange, setAgeRange] = useState<AgeRange | undefined>(undefined);
+  const [gender, setGender] = useState<Gender | undefined>(undefined);
 
   // Follower/following counts (one-shot aggregation; count() can't be live).
   useEffect(() => {
@@ -100,6 +111,8 @@ function Editor() {
         const nick = p?.nickname ?? user!.displayName ?? user!.email ?? "";
         setCurrent(p?.nickname ?? "");
         setValue(nick);
+        setAgeRange(p?.ageRange);
+        setGender(p?.gender);
         setLoaded(true);
       })
       .catch(() => alive && setLoaded(true));
@@ -170,6 +183,28 @@ function Editor() {
       setCheck({ kind: "error", message });
     } finally {
       setSaving(false);
+    }
+  }
+
+  // Demographics save instantly (optimistic) on selection; revert on failure.
+  async function chooseAge(a: AgeRange) {
+    if (a === ageRange) return;
+    const prev = ageRange;
+    setAgeRange(a);
+    try {
+      await updateProfileMeta(uid, { ageRange: a });
+    } catch {
+      setAgeRange(prev);
+    }
+  }
+  async function chooseGender(g: Gender) {
+    if (g === gender) return;
+    const prev = gender;
+    setGender(g);
+    try {
+      await updateProfileMeta(uid, { gender: g });
+    } catch {
+      setGender(prev);
     }
   }
 
@@ -255,7 +290,43 @@ function Editor() {
           </span>
         ) : null}
       </div>
+
+      {/* Demographics — shown on your public profile. Optional. */}
+      <div className="mt-7 border-t border-border-subtle pt-6">
+        <p className="text-[13px] font-medium text-foreground-muted">연령대</p>
+        <p className="mt-1 text-[12px] text-foreground-dim">
+          공개 프로필에 표시돼요. 선택 시 바로 저장돼요.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {AGE_RANGES.map((a) => (
+            <Chip
+              key={a}
+              active={ageRange === a}
+              disabled={!loaded}
+              onClick={() => void chooseAge(a)}
+            >
+              {AGE_RANGE_LABEL[a]}
+            </Chip>
+          ))}
+        </div>
+
+        <p className="mt-5 text-[13px] font-medium text-foreground-muted">성별</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {GENDERS.map((g) => (
+            <Chip
+              key={g}
+              active={gender === g}
+              disabled={!loaded}
+              onClick={() => void chooseGender(g)}
+            >
+              {GENDER_LABEL[g]}
+            </Chip>
+          ))}
+        </div>
+      </div>
     </Card>
+
+    <UserSearch title="닉네임으로 친구찾기" />
 
     <AccountDeleteCard />
     </div>
@@ -361,6 +432,35 @@ function AccountDeleteCard() {
 
 function Card({ children }: { children: React.ReactNode }) {
   return <div className="card-premium p-6 sm:p-8">{children}</div>;
+}
+
+function Chip({
+  active,
+  disabled,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={active}
+      className={cn(
+        "h-9 px-4 rounded-full text-[13px] font-medium transition-colors disabled:opacity-50",
+        active
+          ? "bg-accent text-background"
+          : "bg-surface-2 text-foreground-muted hover:text-foreground border border-border-subtle",
+      )}
+    >
+      {children}
+    </button>
+  );
 }
 
 function Stat({ label, value }: { label: string; value: number | undefined }) {

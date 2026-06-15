@@ -2,16 +2,24 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Search, Loader2 } from "lucide-react";
-import { searchProfilesByNickname, type Profile } from "@/lib/profile";
+import {
+  searchProfilesByNickname,
+  AGE_RANGE_LABEL,
+  GENDER_LABEL,
+  type Profile,
+} from "@/lib/profile";
+import { getFollowCounts, type FollowCounts } from "@/lib/follow";
 import { useAuth } from "@/lib/auth-context";
 import { FollowButton } from "./follow-button";
 import { LevelBadge } from "./level-badge";
 
 // Search users by nickname and follow them straight from the results. Debounced
-// prefix search against the public /profiles index. Lives at the top of the
-// 팔로잉 tab so finding new people to follow is one box away from the feed.
-export function UserSearch() {
+// prefix search against the public /profiles index. Each result shows level,
+// age/gender, and follower/following counts; tapping the row opens the public
+// profile. Used in the 팔로잉 tab and on the profile page (친구찾기).
+export function UserSearch({ title }: { title?: string }) {
   const { user } = useAuth();
   const me = user?.uid ?? null;
   const [value, setValue] = useState("");
@@ -45,7 +53,12 @@ export function UserSearch() {
   }, [value]);
 
   return (
-    <div className="card-premium p-4 mb-5">
+    <div className="card-premium p-4">
+      {title && (
+        <h3 className="mb-3 px-1 text-[14px] font-semibold tracking-tight">
+          {title}
+        </h3>
+      )}
       <div className="relative">
         <Search
           size={15}
@@ -73,42 +86,75 @@ export function UserSearch() {
               일치하는 사용자가 없어요.
             </p>
           ) : (
-            results.map((p) => (
-              <div
-                key={p.uid}
-                className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-surface-2"
-              >
-                {p.photoURL ? (
-                  <Image
-                    src={p.photoURL}
-                    alt=""
-                    width={36}
-                    height={36}
-                    className="rounded-full object-cover shrink-0"
-                    unoptimized
-                  />
-                ) : (
-                  <span className="h-9 w-9 shrink-0 rounded-full bg-accent/15 text-accent flex items-center justify-center text-[13px] font-semibold">
-                    {(p.nickname || "?").slice(0, 1).toUpperCase()}
-                  </span>
-                )}
-                <div className="min-w-0 flex-1 flex items-center gap-1.5">
-                  <span className="truncate text-[14px] font-medium">
-                    {p.nickname}
-                  </span>
-                  <LevelBadge uid={p.uid} />
-                </div>
-                {me === p.uid ? (
-                  <span className="shrink-0 pr-1 text-[12px] text-foreground-dim">
-                    나
-                  </span>
-                ) : (
-                  <FollowButton targetUid={p.uid} size="sm" />
-                )}
-              </div>
-            ))
+            results.map((p) => <ResultRow key={p.uid} profile={p} me={me} />)
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+function ResultRow({ profile: p, me }: { profile: Profile; me: string | null }) {
+  const [counts, setCounts] = useState<FollowCounts | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    getFollowCounts(p.uid)
+      .then((c) => alive && setCounts(c))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [p.uid]);
+
+  const demo = [
+    p.ageRange ? AGE_RANGE_LABEL[p.ageRange] : null,
+    p.gender ? GENDER_LABEL[p.gender] : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-surface-2">
+      <Link href={`/u/${p.uid}`} className="min-w-0 flex-1 flex items-center gap-3">
+        {p.photoURL ? (
+          <Image
+            src={p.photoURL}
+            alt=""
+            width={40}
+            height={40}
+            className="rounded-full object-cover shrink-0"
+            unoptimized
+          />
+        ) : (
+          <span className="h-10 w-10 shrink-0 rounded-full bg-accent/15 text-accent flex items-center justify-center text-[14px] font-semibold">
+            {(p.nickname || "?").slice(0, 1).toUpperCase()}
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="truncate text-[14px] font-medium">
+              {p.nickname}
+            </span>
+            <LevelBadge uid={p.uid} />
+          </div>
+          <div className="mt-0.5 text-[11px] text-foreground-dim truncate">
+            {demo && <span>{demo} · </span>}
+            팔로워{" "}
+            <span className="text-foreground-muted tabular-nums">
+              {counts?.followers ?? "—"}
+            </span>
+            {"  ·  "}팔로잉{" "}
+            <span className="text-foreground-muted tabular-nums">
+              {counts?.following ?? "—"}
+            </span>
+          </div>
+        </div>
+      </Link>
+      {me === p.uid ? (
+        <span className="shrink-0 pr-1 text-[12px] text-foreground-dim">나</span>
+      ) : (
+        <FollowButton targetUid={p.uid} size="sm" />
       )}
     </div>
   );

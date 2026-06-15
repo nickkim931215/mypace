@@ -24,16 +24,44 @@ import { getDb, isFirebaseConfigured } from "@/firebase/config";
 // under a race. See firestore.rules.
 // ---------------------------------------------------------------------------
 
+export type AgeRange = "10s" | "20s" | "30s" | "40s" | "50s" | "60s" | "70s";
+export type Gender = "male" | "female";
+
+export const AGE_RANGES: AgeRange[] = [
+  "10s",
+  "20s",
+  "30s",
+  "40s",
+  "50s",
+  "60s",
+  "70s",
+];
+export const AGE_RANGE_LABEL: Record<AgeRange, string> = {
+  "10s": "10대",
+  "20s": "20대",
+  "30s": "30대",
+  "40s": "40대",
+  "50s": "50대",
+  "60s": "60대",
+  "70s": "70대",
+};
+export const GENDERS: Gender[] = ["male", "female"];
+export const GENDER_LABEL: Record<Gender, string> = { male: "남", female: "여" };
+
 export interface Profile {
   uid: string;
   nickname: string;
   nicknameLower: string; // == nicknameKey(nickname); mirrors the /usernames doc id
   photoURL: string | null;
   updatedAt: number;
-  // Public gamified level (1..6), mirrored from the user's private workout
+  // Public gamified level (1..7), mirrored from the user's private workout
   // count so it can show next to their nickname in the community. Optional —
   // legacy/unseeded profiles read as "no level yet" (treated as level 1).
   level?: number;
+  // Optional self-declared demographics, shown on the public profile. Absent
+  // until the user fills them in on /profile.
+  ageRange?: AgeRange;
+  gender?: Gender;
 }
 
 export const NICKNAME_MIN = 2;
@@ -291,8 +319,12 @@ export async function setNickname(uid: string, raw: string): Promise<string> {
     const photoURL = prof.exists()
       ? ((prof.data() as Profile).photoURL ?? null)
       : null;
-    // Carry the level forward — this full-doc set would otherwise wipe it.
-    const level = prof.exists() ? (prof.data() as Profile).level : undefined;
+    // Carry forward fields this full-doc set would otherwise wipe (level +
+    // self-declared demographics).
+    const prev = prof.exists() ? (prof.data() as Profile) : null;
+    const level = prev?.level;
+    const ageRange = prev?.ageRange;
+    const gender = prev?.gender;
 
     const swapping = oldKey !== key;
     const newReg = swapping ? await tx.get(usernameRef(key)) : null;
@@ -322,10 +354,28 @@ export async function setNickname(uid: string, raw: string): Promise<string> {
       photoURL,
       updatedAt: Date.now(),
       ...(level !== undefined ? { level } : {}),
+      ...(ageRange !== undefined ? { ageRange } : {}),
+      ...(gender !== undefined ? { gender } : {}),
     } satisfies Profile);
   });
 
   return nickname;
+}
+
+// Patch the self-declared demographic fields (age range / gender) on the
+// owner's PUBLIC profile. Only touches the given fields — never the nickname or
+// its registry. Profile doc must already exist (seeded at sign-in). The update
+// rule passes because the doc's uid is unchanged on a merge.
+export async function updateProfileMeta(
+  uid: string,
+  patch: { ageRange?: AgeRange; gender?: Gender },
+): Promise<void> {
+  if (!isFirebaseConfigured()) return;
+  const data: Record<string, unknown> = {};
+  if (patch.ageRange !== undefined) data.ageRange = patch.ageRange;
+  if (patch.gender !== undefined) data.gender = patch.gender;
+  if (Object.keys(data).length === 0) return;
+  await updateDoc(profileRef(uid), data);
 }
 
 // Best-effort: mirror the user's current level (1..6) onto their PUBLIC profile
