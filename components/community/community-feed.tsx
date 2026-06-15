@@ -10,6 +10,7 @@ import type { CommunityPost, PostKind } from "@/lib/types";
 
 type FeedTab = PostKind | "following";
 import { PostCard } from "./post-card";
+import { UserSearch } from "./user-search";
 import { RecordPostCard } from "./record-post-card";
 import { PostDetailModal } from "./post-detail-modal";
 import { ShareModal } from "./share-modal";
@@ -202,6 +203,8 @@ export function CommunityFeed() {
           </Button>
         )}
       </div>
+
+      {isFollowing && <UserSearch />}
 
       {error && (
         <div className="card-premium px-5 py-4 mb-6 text-[13px] text-danger">

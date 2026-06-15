@@ -1,6 +1,7 @@
 import {
   doc,
   getDoc,
+  getDocFromServer,
   onSnapshot,
   runTransaction,
   updateDoc,
@@ -123,6 +124,33 @@ export async function isNicknameAvailable(
   return !snap.exists() || snap.data().uid === uid;
 }
 
+// Prefix search over public profiles by nickname, for the "find people to
+// follow" feature. Matches the SAME normalization as nicknameKey (case- and
+// whitespace-insensitive), so "Nick", "nick" and "NICK KIM" all find "Nick Kim".
+// Uses the standard Firestore prefix-range trick on the indexed nicknameLower
+// field (no composite index needed). Returns at most `max` profiles.
+export async function searchProfilesByNickname(
+  rawQuery: string,
+  max = 12,
+): Promise<Profile[]> {
+  if (!isFirebaseConfigured()) return [];
+  const key = nicknameKey(rawQuery);
+  if (!key) return [];
+  const { collection, query, where, orderBy, limit, getDocs } = await import(
+    "firebase/firestore"
+  );
+  // All keys having `key` as a prefix live in [key, key + "").
+  const q = query(
+    collection(getDb(), "profiles"),
+    orderBy("nicknameLower"),
+    where("nicknameLower", ">=", key),
+    where("nicknameLower", "<", key + ""),
+    limit(max),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => d.data() as Profile);
+}
+
 // Strip a raw display name down to allowed nickname chars, for seeding from a
 // Google account name / email. Falls back to "사용자" if nothing survives.
 function deriveBase(raw: string | null | undefined): string {
@@ -174,7 +202,19 @@ async function ensureProfileInner(user: {
   photoURL: string | null;
 }): Promise<string | null> {
   if (!isFirebaseConfigured()) return null;
-  const existing = await getDoc(profileRef(user.uid));
+
+  // Authoritative existence check — read from the SERVER, never the local
+  // cache. A cache false-negative here (offline / a fresh device / an unsynced
+  // cache, all common on mobile) used to make us treat an already-seeded user
+  // as brand new and re-seed their Google name OVER a custom nickname they'd
+  // saved. If the server is unreachable we DON'T seed: skipping is safe (a
+  // later online load retries), clobbering a saved nickname is not.
+  let existing;
+  try {
+    existing = await getDocFromServer(profileRef(user.uid));
+  } catch {
+    return null;
+  }
   if (existing.exists()) return (existing.data() as Profile).nickname;
 
   const base = deriveBase(user.displayName ?? user.email?.split("@")[0]);
@@ -184,8 +224,14 @@ async function ensureProfileInner(user: {
     const candidate = candidateAt(base, i);
     const key = nicknameKey(candidate);
     try {
-      await runTransaction(db, async (tx) => {
+      const settled = await runTransaction(db, async (tx) => {
+        // Re-read the profile INSIDE the transaction (strongly consistent). If
+        // it already exists — seeded concurrently, or hidden from the outer
+        // read by a stale cache — never overwrite it; keep its nickname. This
+        // is the hard guarantee that a saved nickname can't be reset.
+        const prof = await tx.get(profileRef(user.uid));
         const taken = await tx.get(usernameRef(key));
+        if (prof.exists()) return (prof.data() as Profile).nickname;
         if (taken.exists()) {
           // Someone else holds it → try the next candidate. If WE already hold
           // it (a prior partial seed), reuse it — don't re-set (that's an
@@ -201,8 +247,9 @@ async function ensureProfileInner(user: {
           photoURL: user.photoURL ?? null,
           updatedAt: Date.now(),
         } satisfies Profile);
+        return candidate;
       });
-      return candidate;
+      return settled;
     } catch (err) {
       if (err instanceof NicknameTakenError) continue; // collision → try next
       throw err;
@@ -211,7 +258,9 @@ async function ensureProfileInner(user: {
   // Pathological fallback: suffix with a slice of the uid (always unique).
   const fallback = `${base.slice(0, 10)}_${user.uid.slice(0, 5)}`;
   const key = nicknameKey(fallback);
-  await runTransaction(db, async (tx) => {
+  return runTransaction(db, async (tx) => {
+    const prof = await tx.get(profileRef(user.uid));
+    if (prof.exists()) return (prof.data() as Profile).nickname;
     tx.set(usernameRef(key), { uid: user.uid });
     tx.set(profileRef(user.uid), {
       uid: user.uid,
@@ -220,8 +269,8 @@ async function ensureProfileInner(user: {
       photoURL: user.photoURL ?? null,
       updatedAt: Date.now(),
     } satisfies Profile);
+    return fallback;
   });
-  return fallback;
 }
 
 // Change a user's nickname. Atomically: verifies the new key is free, claims
