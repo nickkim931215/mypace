@@ -27,8 +27,11 @@ import { getDb, isFirebaseConfigured } from "@/firebase/config";
 export type AgeRange = "10s" | "20s" | "30s" | "40s" | "50s" | "60s" | "70s";
 export type Gender = "male" | "female";
 
+// Selectable age brackets. "10s" is deliberately NOT offered: the service is not
+// directed at children (privacy policy / terms state "만 14세 미만 대상 아님"),
+// so we don't solicit a teen bracket. "10s" stays in the AgeRange type + label
+// below only so any pre-existing stored value still renders without breaking.
 export const AGE_RANGES: AgeRange[] = [
-  "10s",
   "20s",
   "30s",
   "40s",
