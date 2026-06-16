@@ -12,6 +12,7 @@ import {
   Send,
   Loader2,
   Dumbbell,
+  Flag,
   Timer as TimerIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,10 @@ import {
 } from "@/lib/community";
 import { BODY_PART_LABEL, type BodyPart } from "@/lib/ai-recommend";
 import { useProfileName } from "@/hooks/use-profile-name";
+import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { FollowButton } from "./follow-button";
+import { PostOverflowMenu } from "./post-overflow-menu";
+import { ReportDialog } from "./report-dialog";
 import { LevelBadge } from "./level-badge";
 import { LevelName } from "./level-name";
 import { RecordCalendarCard } from "./record-calendar-card";
@@ -72,6 +76,12 @@ export function PostDetailModal({
   const [replyOpenId, setReplyOpenId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState("");
   const [replyPosting, setReplyPosting] = useState(false);
+
+  // Which comment is being reported (null = none).
+  const [reportingComment, setReportingComment] = useState<PostComment | null>(
+    null,
+  );
+  const blockedIds = useBlockedIds();
 
   useEffect(() => {
     const unsub = subscribeComments(post.id, setComments);
@@ -242,10 +252,12 @@ export function PostDetailModal({
     : 0;
 
   // Group comments into one level of threads. `comments` arrives ordered by
-  // createdAt asc, so both top-level and replies stay chronological.
-  const topLevelComments = comments.filter((c) => !c.parentId);
+  // createdAt asc, so both top-level and replies stay chronological. Comments
+  // from blocked users are hidden.
+  const visibleComments = comments.filter((c) => !blockedIds.has(c.authorId));
+  const topLevelComments = visibleComments.filter((c) => !c.parentId);
   const repliesByParent = new Map<string, PostComment[]>();
-  for (const c of comments) {
+  for (const c of visibleComments) {
     if (!c.parentId) continue;
     const arr = repliesByParent.get(c.parentId) ?? [];
     arr.push(c);
@@ -306,7 +318,17 @@ export function PostDetailModal({
                 </p>
               </div>
             </Link>
-            {!isOwner && <FollowButton targetUid={post.authorId} size="sm" />}
+            {!isOwner && (
+              <div className="flex items-center gap-1 shrink-0">
+                <FollowButton targetUid={post.authorId} size="sm" />
+                <PostOverflowMenu
+                  postId={post.id}
+                  authorId={post.authorId}
+                  authorName={postAuthorName}
+                  onBlocked={onClose}
+                />
+              </div>
+            )}
             {isOwner && !editing && (
               <div className="flex items-center gap-1">
                 <button
@@ -479,8 +501,10 @@ export function PostDetailModal({
                     <CommentRow
                       comment={c}
                       canDelete={user?.uid === c.authorId}
+                      canReport={!!user && user.uid !== c.authorId}
                       deleting={deletingCommentId === c.id}
                       onDelete={() => onDeleteComment(c.id)}
+                      onReport={() => setReportingComment(c)}
                     />
 
                     {(replies.length > 0 || replyOpenId === c.id) && (
@@ -491,8 +515,10 @@ export function PostDetailModal({
                             comment={r}
                             small
                             canDelete={user?.uid === r.authorId}
+                            canReport={!!user && user.uid !== r.authorId}
                             deleting={deletingCommentId === r.id}
                             onDelete={() => onDeleteComment(r.id)}
+                            onReport={() => setReportingComment(r)}
                           />
                         ))}
                         {replyOpenId === c.id && (
@@ -586,6 +612,16 @@ export function PostDetailModal({
         </div>
         </div>
       </div>
+
+      {reportingComment && (
+        <ReportDialog
+          targetType="comment"
+          targetId={reportingComment.id}
+          authorId={reportingComment.authorId}
+          postId={post.id}
+          onClose={() => setReportingComment(null)}
+        />
+      )}
     </div>
   );
 }
@@ -650,14 +686,18 @@ function RoutinePreview({
 function CommentRow({
   comment: c,
   canDelete,
+  canReport,
   deleting,
   onDelete,
+  onReport,
   small,
 }: {
   comment: PostComment;
   canDelete: boolean;
+  canReport: boolean;
   deleting: boolean;
   onDelete: () => void;
+  onReport: () => void;
   small?: boolean;
 }) {
   const name = useProfileName(c.authorId, c.authorName);
@@ -694,6 +734,16 @@ function CommentRow({
           ) : (
             <Trash2 size={13} />
           )}
+        </button>
+      )}
+      {canReport && (
+        <button
+          type="button"
+          onClick={onReport}
+          aria-label="댓글 신고"
+          className="shrink-0 h-7 w-7 rounded-full text-foreground-dim hover:text-foreground hover:bg-surface-2 transition-colors flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+        >
+          <Flag size={13} />
         </button>
       )}
     </div>

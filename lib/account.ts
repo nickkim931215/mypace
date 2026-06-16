@@ -42,12 +42,14 @@ export async function deleteAccount(user: User): Promise<void> {
     ? ((profSnap.data() as Profile).nicknameLower ?? null)
     : null;
 
-  // Bulk content: own posts, follow edges (both directions), notifications.
+  // Bulk content: own posts, follow edges (both directions), notifications,
+  // and the personal blocklist.
   await Promise.allSettled([
     deleteAll(query(collection(db, "posts"), where("authorId", "==", uid))),
     deleteAll(query(collection(db, "follows"), where("followerId", "==", uid))),
     deleteAll(query(collection(db, "follows"), where("followeeId", "==", uid))),
     deleteAll(collection(db, "users", uid, "notifications")),
+    deleteAll(collection(db, "users", uid, "blocks")),
   ]);
 
   // Singletons: private sync doc (routines + workout history), public profile,

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Plus, Users, LogIn, Loader2, Trophy, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
+import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { subscribePosts, getPost } from "@/lib/community";
 import { subscribeFollowing } from "@/lib/follow";
 import type { CommunityPost, PostKind } from "@/lib/types";
@@ -35,6 +36,8 @@ export function CommunityFeed() {
   const [tab, setTab] = useState<FeedTab>("routine");
   // uids the current user follows — drives the 팔로잉 tab.
   const [followingIds, setFollowingIds] = useState<string[]>([]);
+  // uids the current user has blocked — their posts are hidden from the feed.
+  const blockedIds = useBlockedIds();
 
   useEffect(() => {
     if (!canLoadFeed) return;
@@ -148,10 +151,13 @@ export function CommunityFeed() {
     );
   }
 
-  const routinePosts = posts.filter((p) => p.kind !== "record");
-  const recordPosts = posts.filter((p) => p.kind === "record");
+  const unblockedPosts = posts.filter((p) => !blockedIds.has(p.authorId));
+  const routinePosts = unblockedPosts.filter((p) => p.kind !== "record");
+  const recordPosts = unblockedPosts.filter((p) => p.kind === "record");
   const followingSet = useMemo(() => new Set(followingIds), [followingIds]);
-  const followingPosts = posts.filter((p) => followingSet.has(p.authorId));
+  const followingPosts = unblockedPosts.filter((p) =>
+    followingSet.has(p.authorId),
+  );
   const isRecord = tab === "record";
   const isFollowing = tab === "following";
   const visible = isFollowing

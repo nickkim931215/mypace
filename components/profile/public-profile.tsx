@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Flag, Ban } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import {
   subscribeProfile,
@@ -12,8 +12,12 @@ import {
   type Profile,
 } from "@/lib/profile";
 import { getFollowCounts, type FollowCounts } from "@/lib/follow";
+import { blockUser, unblockUser } from "@/lib/moderation";
+import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { FollowButton } from "@/components/community/follow-button";
+import { ReportDialog } from "@/components/community/report-dialog";
 import { LevelBadge } from "@/components/community/level-badge";
+import { cn } from "@/lib/utils";
 
 // Public, read-only profile for any user, reached from a nickname tap. Shows
 // identity (avatar + nickname + level/칭호), self-declared demographics, follow
@@ -27,6 +31,7 @@ export function PublicProfile({ uid }: { uid: string }) {
   const [loaded, setLoaded] = useState(false);
   const [counts, setCounts] = useState<FollowCounts | null>(null);
   const [countSeq, setCountSeq] = useState(0);
+  const blockedIds = useBlockedIds();
 
   useEffect(() => {
     setLoaded(false);
@@ -136,8 +141,95 @@ export function PublicProfile({ uid }: { uid: string }) {
             />
           )}
         </div>
+
+        {!isMe && me && (
+          <ModerationActions
+            myUid={me}
+            targetUid={uid}
+            targetName={profile.nickname}
+            blocked={blockedIds.has(uid)}
+          />
+        )}
       </div>
     </Card>
+  );
+}
+
+// Report / block / unblock controls shown on another user's public profile.
+// Blocking hides this person's posts and comments everywhere (enforced via the
+// blocklist subscription that powers useBlockedIds).
+function ModerationActions({
+  myUid,
+  targetUid,
+  targetName,
+  blocked,
+}: {
+  myUid: string;
+  targetUid: string;
+  targetName: string;
+  blocked: boolean;
+}) {
+  const [reporting, setReporting] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function onToggleBlock() {
+    if (busy) return;
+    if (
+      !blocked &&
+      !confirm(
+        `${targetName}님을 차단할까요?\n차단하면 이 사용자의 게시물과 댓글이 더 이상 보이지 않아요.`,
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      if (blocked) await unblockUser(myUid, targetUid);
+      else await blockUser(myUid, targetUid);
+    } catch (err) {
+      console.error("[moderation] block toggle failed:", err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-3 flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setReporting(true)}
+        className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[12px] text-foreground-dim hover:text-foreground hover:bg-surface-2 transition-colors"
+      >
+        <Flag size={13} />
+        신고
+      </button>
+      <button
+        type="button"
+        onClick={onToggleBlock}
+        disabled={busy}
+        className={cn(
+          "inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[12px] transition-colors disabled:opacity-50",
+          blocked
+            ? "text-foreground-muted hover:text-foreground hover:bg-surface-2"
+            : "text-danger hover:bg-danger/10",
+        )}
+      >
+        {busy ? (
+          <Loader2 size={13} className="animate-spin" />
+        ) : (
+          <Ban size={13} />
+        )}
+        {blocked ? "차단 해제" : "차단"}
+      </button>
+
+      {reporting && (
+        <ReportDialog
+          targetType="user"
+          targetId={targetUid}
+          authorId={targetUid}
+          onClose={() => setReporting(false)}
+        />
+      )}
+    </div>
   );
 }
 

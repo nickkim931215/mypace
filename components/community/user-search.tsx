@@ -12,6 +12,7 @@ import {
 } from "@/lib/profile";
 import { getFollowCounts, type FollowCounts } from "@/lib/follow";
 import { useAuth } from "@/lib/auth-context";
+import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { FollowButton } from "./follow-button";
 import { LevelBadge } from "./level-badge";
 
@@ -22,6 +23,7 @@ import { LevelBadge } from "./level-badge";
 export function UserSearch({ title }: { title?: string }) {
   const { user } = useAuth();
   const me = user?.uid ?? null;
+  const blockedIds = useBlockedIds();
   const [value, setValue] = useState("");
   const [results, setResults] = useState<Profile[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -79,17 +81,23 @@ export function UserSearch({ title }: { title?: string }) {
         )}
       </div>
 
-      {results && (
-        <div className="mt-3 flex flex-col gap-0.5">
-          {results.length === 0 ? (
-            <p className="px-1 py-3 text-center text-[13px] text-foreground-dim">
-              일치하는 사용자가 없어요.
-            </p>
-          ) : (
-            results.map((p) => <ResultRow key={p.uid} profile={p} me={me} />)
-          )}
-        </div>
-      )}
+      {results &&
+        (() => {
+          const visible = results.filter((p) => !blockedIds.has(p.uid));
+          return (
+            <div className="mt-3 flex flex-col gap-0.5">
+              {visible.length === 0 ? (
+                <p className="px-1 py-3 text-center text-[13px] text-foreground-dim">
+                  일치하는 사용자가 없어요.
+                </p>
+              ) : (
+                visible.map((p) => (
+                  <ResultRow key={p.uid} profile={p} me={me} />
+                ))
+              )}
+            </div>
+          );
+        })()}
     </div>
   );
 }
