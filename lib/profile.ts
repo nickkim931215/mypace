@@ -29,23 +29,18 @@ export type Gender = "male" | "female";
 
 // Selectable age brackets. "10s" is deliberately NOT offered: the service is not
 // directed at children (privacy policy / terms state "만 14세 미만 대상 아님"),
-// so we don't solicit a teen bracket. "10s" stays in the AgeRange type + label
-// below only so any pre-existing stored value still renders without breaking.
-export const AGE_RANGES: AgeRange[] = [
-  "20s",
-  "30s",
-  "40s",
-  "50s",
-  "60s",
-  "70s",
-];
+// so we don't solicit a teen bracket. "60s" is the open-ended top bracket
+// ("60대+"), so "70s" is not offered either. Both "10s" and "70s" stay in the
+// AgeRange type + label below only so any pre-existing stored value still
+// renders without breaking.
+export const AGE_RANGES: AgeRange[] = ["20s", "30s", "40s", "50s", "60s"];
 export const AGE_RANGE_LABEL: Record<AgeRange, string> = {
   "10s": "10대",
   "20s": "20대",
   "30s": "30대",
   "40s": "40대",
   "50s": "50대",
-  "60s": "60대",
+  "60s": "60대+",
   "70s": "70대",
 };
 export const GENDERS: Gender[] = ["male", "female"];
