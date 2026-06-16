@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { X, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
@@ -114,7 +115,15 @@ export function ReportDialog({
               {TARGET_LABEL[targetType]} 신고
             </h3>
             <p className="mt-1.5 text-[13px] text-foreground-muted">
-              신고 사유를 선택해 주세요.
+              신고 사유를 선택해 주세요. 어떤 콘텐츠가 금지되는지는{" "}
+              <Link
+                href="/terms"
+                target="_blank"
+                className="text-accent underline underline-offset-2"
+              >
+                커뮤니티 가이드라인
+              </Link>
+              에서 확인할 수 있어요.
             </p>
 
             <div className="mt-4 flex flex-col gap-1.5">

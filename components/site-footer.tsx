@@ -13,6 +13,9 @@ export function SiteFooter() {
           <Link href="/community" className="hover:text-foreground transition-colors">
             커뮤니티
           </Link>
+          <Link href="/terms" className="hover:text-foreground transition-colors">
+            이용약관
+          </Link>
           <Link href="/privacy" className="hover:text-foreground transition-colors">
             개인정보처리방침
           </Link>
