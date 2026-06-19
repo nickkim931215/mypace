@@ -275,7 +275,16 @@ export function HistoryView() {
                 title={`${count}회 완료 · 눌러서 보기`}
               >
                 {cell.day}
-                <span className="absolute bottom-1.5 h-1 w-1 rounded-full bg-accent" />
+                {/* One dot per workout that day (capped at 4 to fit the cell;
+                    the exact count is in the title + day-detail sheet). */}
+                <span className="absolute inset-x-0 bottom-1.5 flex items-center justify-center gap-0.5">
+                  {Array.from({ length: Math.min(count, 4) }).map((_, i) => (
+                    <span
+                      key={i}
+                      className="h-1 w-1 rounded-full bg-accent"
+                    />
+                  ))}
+                </span>
               </button>
             );
           })}
