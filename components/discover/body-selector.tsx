@@ -59,7 +59,7 @@ const ZONES: { id: BodyPart; paths: string[] }[] = [
 
 export function BodySelector({ selected, onSelect }: Props) {
   return (
-    <div className="grid grid-cols-[42%_1fr] gap-4 sm:grid-cols-[1fr_220px] sm:gap-10 items-center">
+    <div className="grid grid-cols-[58%_1fr] gap-3 sm:grid-cols-[1fr_220px] sm:gap-10 items-center">
       {/* Mannequin figure with clickable muscle hotspots */}
       <div
         className="relative mx-auto w-full max-w-[240px] overflow-hidden rounded-3xl border border-border-subtle"
