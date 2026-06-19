@@ -70,6 +70,18 @@ export function maxUpdatedAt(routines: Routine[]): number {
   return m;
 }
 
+// Pure guard for whether the bridge may push local state up to the cloud right
+// now. Pushing is only safe AFTER the first cloud snapshot for the account has
+// been reconciled into local (`hydrated`) and while we are not mid-apply of a
+// remote snapshot. Extracted as a pure function so this data-loss-prevention
+// invariant can be unit-tested without React/Firestore.
+export function canPush(state: {
+  hydrated: boolean;
+  applyingRemote: boolean;
+}): boolean {
+  return state.hydrated && !state.applyingRemote;
+}
+
 // Union two completion logs by id (append-only — history is never lost when
 // devices reconcile), kept sorted oldest-first.
 export function mergeCompletions(

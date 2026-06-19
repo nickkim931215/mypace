@@ -7,6 +7,7 @@ import { useSyncStore } from "@/store/sync-store";
 import { getLevel } from "@/lib/level";
 import { syncProfileLevel } from "@/lib/profile";
 import {
+  canPush,
   maxUpdatedAt,
   mergeCompletions,
   pushUserDoc,
@@ -63,11 +64,17 @@ export function SyncBridge() {
     }
 
     function schedulePush() {
-      if (applyingRemoteRef.current) return;
-      // Don't push until the first cloud snapshot has been reconciled — see
-      // hydratedRef. This is the guard that prevents an empty/stale local state
-      // from clobbering real cloud history before it has had a chance to load.
-      if (!hydratedRef.current) return;
+      // Never push before the first cloud reconcile, and never mid-apply of a
+      // remote snapshot. canPush() centralizes this guard (see hydratedRef) so
+      // the invariant — empty/stale local can't clobber real cloud history — is
+      // unit-tested in isolation.
+      if (
+        !canPush({
+          hydrated: hydratedRef.current,
+          applyingRemote: applyingRemoteRef.current,
+        })
+      )
+        return;
       if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
       useSyncStore.getState().setStatus("syncing");
       pushTimerRef.current = setTimeout(async () => {

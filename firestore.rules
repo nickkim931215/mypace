@@ -5,8 +5,27 @@ service cloud.firestore {
 
     // Per-user routine sync doc: /users/{uid}
     match /users/{uid} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == uid;
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create, delete: if request.auth != null
+                            && request.auth.uid == uid;
+
+      // Server-side safety net against catastrophic workout-history loss.
+      // A single update may NOT delete more than half of the existing
+      // completions log (once it holds >= 4 entries). Normal use — appending
+      // workouts, or deleting accidental records one/a-few at a time — passes
+      // untouched, but a buggy or stale client that tries to overwrite the doc
+      // with an empty/near-empty log (e.g. 16 -> 0) is REFUSED by Firestore
+      // itself, independent of any client-side guard. This is the last line of
+      // defense for real users' history.
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && (
+                      !('completions' in resource.data)
+                      || !('completions' in request.resource.data)
+                      || resource.data.completions.size() < 4
+                      || request.resource.data.completions.size() * 2
+                           >= resource.data.completions.size()
+                    );
 
       // In-app notifications. The owner reads / marks-read / deletes their own;
       // ANY signed-in user may create one (so a commenter / liker can notify the
