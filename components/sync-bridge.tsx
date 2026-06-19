@@ -87,12 +87,17 @@ export function SyncBridge() {
 
     const unsubRemote = subscribeUserDoc(
       uid,
-      (cloud) => {
+      (cloud, fromCache) => {
+        // A cache-only "doc doesn't exist" is ambiguous: it can mean a cold
+        // local cache (offline / first paint) just as easily as a genuinely new
+        // account. Treating it as truth would let us seed/push empty local over
+        // a real cloud doc. So ignore it and wait for the server snapshot.
+        if (!cloud && fromCache) return;
         // We now know the cloud state for this account; from here every branch
         // below merges cloud history before any push, so pushing is safe.
         hydratedRef.current = true;
         if (!cloud) {
-          // First sign-in on this account — push local as the seed.
+          // First sign-in on this account (server-confirmed empty) — seed cloud.
           initialAppliedRef.current = true;
           schedulePush();
           return;

@@ -23,23 +23,32 @@ function userDoc(uid: string): DocumentReference {
 
 export function subscribeUserDoc(
   uid: string,
-  onChange: (snap: CloudSnapshot | null) => void,
+  onChange: (snap: CloudSnapshot | null, fromCache: boolean) => void,
   onError?: (err: Error) => void,
 ): Unsubscribe {
   return onSnapshot(
     userDoc(uid),
     (s) => {
+      // fromCache lets the caller distinguish a server-confirmed view from a
+      // local-cache guess — critical so a cold-cache "doc missing" isn't taken
+      // as truth and used to overwrite a real cloud doc.
+      const fromCache = s.metadata.fromCache;
       if (!s.exists()) {
-        onChange(null);
+        onChange(null, fromCache);
         return;
       }
       const data = s.data() as Partial<CloudSnapshot> | undefined;
-      onChange({
-        routines: Array.isArray(data?.routines) ? data!.routines : [],
-        currentRoutineId: data?.currentRoutineId ?? null,
-        completions: Array.isArray(data?.completions) ? data!.completions : [],
-        updatedAt: typeof data?.updatedAt === "number" ? data.updatedAt : 0,
-      });
+      onChange(
+        {
+          routines: Array.isArray(data?.routines) ? data!.routines : [],
+          currentRoutineId: data?.currentRoutineId ?? null,
+          completions: Array.isArray(data?.completions)
+            ? data!.completions
+            : [],
+          updatedAt: typeof data?.updatedAt === "number" ? data.updatedAt : 0,
+        },
+        fromCache,
+      );
     },
     (err) => {
       console.error("[sync] subscribe error:", err);
