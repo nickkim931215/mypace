@@ -59,7 +59,7 @@ const ZONES: { id: BodyPart; paths: string[] }[] = [
 
 export function BodySelector({ selected, onSelect }: Props) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[1fr_220px] gap-6 sm:gap-10 items-center">
+    <div className="grid grid-cols-[42%_1fr] gap-4 sm:grid-cols-[1fr_220px] sm:gap-10 items-center">
       {/* Mannequin figure with clickable muscle hotspots */}
       <div
         className="relative mx-auto w-full max-w-[240px] overflow-hidden rounded-3xl border border-border-subtle"
@@ -126,7 +126,7 @@ export function BodySelector({ selected, onSelect }: Props) {
         <span className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim px-1 mb-1">
           부위
         </span>
-        <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
+        <div className="grid grid-cols-1 gap-2">
           {(Object.keys(BODY_PART_LABEL) as BodyPart[]).map((part) => {
             const isSelected = selected === part;
             return (
