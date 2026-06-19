@@ -22,6 +22,13 @@ export function SyncBridge() {
   const lastPushedAtRef = useRef(0);
   const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initialAppliedRef = useRef(false);
+  // True once the first cloud snapshot for THIS account has been received and
+  // reconciled. Until then we must never push: local may be empty or stale
+  // (e.g. right after claimForAccount wiped a previous account's data, or on a
+  // fresh device whose cloud history hasn't downloaded yet). Pushing in that
+  // window would overwrite the cloud's real history via setDoc(merge:false) —
+  // exactly how a full workout log can get wiped on account switch / re-login.
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
     if (!configured) return;
@@ -42,6 +49,7 @@ export function SyncBridge() {
     useTimerStore.getState().claimForAccount(uid);
     useSyncStore.getState().setStatus("loading");
     initialAppliedRef.current = false;
+    hydratedRef.current = false;
 
     function buildSnapshot(): CloudSnapshot {
       const s = useTimerStore.getState();
@@ -56,6 +64,10 @@ export function SyncBridge() {
 
     function schedulePush() {
       if (applyingRemoteRef.current) return;
+      // Don't push until the first cloud snapshot has been reconciled — see
+      // hydratedRef. This is the guard that prevents an empty/stale local state
+      // from clobbering real cloud history before it has had a chance to load.
+      if (!hydratedRef.current) return;
       if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
       useSyncStore.getState().setStatus("syncing");
       pushTimerRef.current = setTimeout(async () => {
@@ -76,6 +88,9 @@ export function SyncBridge() {
     const unsubRemote = subscribeUserDoc(
       uid,
       (cloud) => {
+        // We now know the cloud state for this account; from here every branch
+        // below merges cloud history before any push, so pushing is safe.
+        hydratedRef.current = true;
         if (!cloud) {
           // First sign-in on this account — push local as the seed.
           initialAppliedRef.current = true;
