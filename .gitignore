@@ -49,3 +49,6 @@ next-env.d.ts
 firebase-debug.log
 firestore-debug.log
 *-debug.log
+
+# fontconfig cache (auto-generated)
+.p0fonts/cache/
