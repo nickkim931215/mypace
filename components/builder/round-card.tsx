@@ -16,33 +16,38 @@ import {
 } from "lucide-react";
 import type { Round, RoundType } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT, type TranslateFn } from "@/lib/i18n";
 
-const typeMeta: Record<
+function typeMetaMap(
+  t: TranslateFn,
+): Record<
   RoundType,
   { label: string; color: string; bg: string; ring: string; icon: typeof Dumbbell }
-> = {
-  work: {
-    label: "운동",
-    color: "text-work",
-    bg: "bg-work/10",
-    ring: "ring-work/30",
-    icon: Dumbbell,
-  },
-  rest: {
-    label: "휴식",
-    color: "text-rest",
-    bg: "bg-rest/10",
-    ring: "ring-rest/30",
-    icon: Coffee,
-  },
-  prepare: {
-    label: "준비",
-    color: "text-foreground-muted",
-    bg: "bg-surface-3",
-    ring: "ring-border-strong",
-    icon: Hourglass,
-  },
-};
+> {
+  return {
+    work: {
+      label: t("운동", "Work"),
+      color: "text-work",
+      bg: "bg-work/10",
+      ring: "ring-work/30",
+      icon: Dumbbell,
+    },
+    rest: {
+      label: t("휴식", "Rest"),
+      color: "text-rest",
+      bg: "bg-rest/10",
+      ring: "ring-rest/30",
+      icon: Coffee,
+    },
+    prepare: {
+      label: t("준비", "Prepare"),
+      color: "text-foreground-muted",
+      bg: "bg-surface-3",
+      ring: "ring-border-strong",
+      icon: Hourglass,
+    },
+  };
+}
 
 // Combine a minutes + seconds pair into a clamped total. Minutes 0–60, seconds
 // 0–59, total kept within 5s–60min. NaN (empty field) counts as 0.
@@ -62,25 +67,29 @@ function clampSec(total: number): number {
 // always visible (mobile has no number-input spinners).
 function UnitStepper({
   unit,
+  unitEn,
   value,
   onDec,
   onInc,
   onType,
   max,
+  t,
 }: {
   unit: string;
+  unitEn: string;
   value: number;
   onDec: () => void;
   onInc: () => void;
   onType: (v: number) => void;
   max: number;
+  t: TranslateFn;
 }) {
   return (
     <div className="flex items-center gap-1">
       <button
         type="button"
         onClick={onDec}
-        aria-label={`${unit} 감소`}
+        aria-label={t(`${unit} 감소`, `Decrease ${unitEn}`)}
         className="h-8 w-8 shrink-0 rounded-full bg-surface-2 hover:bg-surface-3 text-foreground-muted flex items-center justify-center transition-colors"
       >
         <Minus size={13} />
@@ -93,14 +102,14 @@ function UnitStepper({
         value={value}
         onChange={(e) => onType(Number(e.target.value))}
         onFocus={(e) => e.target.select()}
-        aria-label={unit}
+        aria-label={t(unit, unitEn)}
         className="tabular w-10 h-9 bg-surface-2 border border-border-subtle rounded-full px-1 text-[14px] font-semibold text-foreground text-center focus:outline-none focus:border-accent/40"
       />
-      <span className="text-foreground-dim text-[12px] w-3">{unit}</span>
+      <span className="text-foreground-dim text-[12px] w-3">{t(unit, unitEn)}</span>
       <button
         type="button"
         onClick={onInc}
-        aria-label={`${unit} 증가`}
+        aria-label={t(`${unit} 증가`, `Increase ${unitEn}`)}
         className="h-8 w-8 shrink-0 rounded-full bg-surface-2 hover:bg-surface-3 text-foreground-muted flex items-center justify-center transition-colors"
       >
         <Plus size={13} />
@@ -130,6 +139,7 @@ export function RoundCard({
   onMoveUp,
   onMoveDown,
 }: Props) {
+  const t = useT();
   const {
     attributes,
     listeners,
@@ -139,7 +149,7 @@ export function RoundCard({
     isDragging,
   } = useSortable({ id: round.id });
 
-  const meta = typeMeta[round.type];
+  const meta = typeMetaMap(t)[round.type];
   const Icon = meta.icon;
 
   const style = {
@@ -162,7 +172,7 @@ export function RoundCard({
         {...attributes}
         {...listeners}
         className="hidden sm:flex h-9 w-7 -ml-1 items-center justify-center text-foreground-dim hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
-        aria-label="순서 변경"
+        aria-label={t("순서 변경", "Reorder")}
       >
         <GripVertical size={18} />
       </button>
@@ -172,7 +182,7 @@ export function RoundCard({
         <button
           onClick={onMoveUp}
           disabled={index === 0}
-          aria-label="위로 이동"
+          aria-label={t("위로 이동", "Move up")}
           className="h-[18px] w-6 flex items-center justify-center text-foreground-dim hover:text-foreground disabled:opacity-25 transition-colors"
         >
           <ChevronUp size={16} />
@@ -180,7 +190,7 @@ export function RoundCard({
         <button
           onClick={onMoveDown}
           disabled={index === total - 1}
-          aria-label="아래로 이동"
+          aria-label={t("아래로 이동", "Move down")}
           className="h-[18px] w-6 flex items-center justify-center text-foreground-dim hover:text-foreground disabled:opacity-25 transition-colors"
         >
           <ChevronDown size={16} />
@@ -205,16 +215,16 @@ export function RoundCard({
           value={round.name}
           onChange={(e) => onChange({ name: e.target.value })}
           className="flex-1 min-w-0 bg-transparent text-[15px] font-medium text-foreground placeholder:text-foreground-dim focus:outline-none focus:ring-1 focus:ring-accent/40 rounded-md px-1 -mx-1"
-          placeholder="운동 이름"
+          placeholder={t("운동 이름", "Exercise name")}
         />
         <select
           value={round.type}
           onChange={(e) => onChange({ type: e.target.value as RoundType })}
           className="hidden sm:block h-8 px-3 rounded-full bg-surface-2 border border-border-subtle text-[12px] text-foreground-muted"
         >
-          <option value="work">운동</option>
-          <option value="rest">휴식</option>
-          <option value="prepare">준비</option>
+          <option value="work">{t("운동", "Work")}</option>
+          <option value="rest">{t("휴식", "Rest")}</option>
+          <option value="prepare">{t("준비", "Prepare")}</option>
         </select>
       </div>
 
@@ -224,15 +234,16 @@ export function RoundCard({
         onChange={(e) => onChange({ type: e.target.value as RoundType })}
         className="sm:hidden h-9 px-2.5 rounded-full bg-surface-2 border border-border-subtle text-xs text-foreground"
       >
-        <option value="work">운동</option>
-        <option value="rest">휴식</option>
-        <option value="prepare">준비</option>
+        <option value="work">{t("운동", "Work")}</option>
+        <option value="rest">{t("휴식", "Rest")}</option>
+        <option value="prepare">{t("준비", "Prepare")}</option>
       </select>
 
       {/* Duration — minute & second steppers (rolls over at 60s) */}
       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
         <UnitStepper
           unit="분"
+          unitEn="min"
           value={Math.floor(round.durationSec / 60)}
           onDec={() => onChange({ durationSec: clampSec(round.durationSec - 60) })}
           onInc={() => onChange({ durationSec: clampSec(round.durationSec + 60) })}
@@ -240,9 +251,11 @@ export function RoundCard({
             onChange({ durationSec: clampDuration(m, round.durationSec % 60) })
           }
           max={60}
+          t={t}
         />
         <UnitStepper
           unit="초"
+          unitEn="sec"
           value={round.durationSec % 60}
           onDec={() => onChange({ durationSec: clampSec(round.durationSec - 5) })}
           onInc={() => onChange({ durationSec: clampSec(round.durationSec + 5) })}
@@ -252,6 +265,7 @@ export function RoundCard({
             })
           }
           max={59}
+          t={t}
         />
       </div>
 
@@ -282,14 +296,14 @@ export function RoundCard({
         <button
           onClick={onDuplicate}
           className="h-9 w-9 rounded-full text-foreground-dim hover:text-foreground hover:bg-surface-2 flex items-center justify-center transition-colors"
-          aria-label="복제"
+          aria-label={t("복제", "Duplicate")}
         >
           <Copy size={15} />
         </button>
         <button
           onClick={onRemove}
           className="h-9 w-9 rounded-full text-foreground-dim hover:text-danger hover:bg-danger/10 flex items-center justify-center transition-colors"
-          aria-label="삭제"
+          aria-label={t("삭제", "Delete")}
         >
           <Trash2 size={15} />
         </button>

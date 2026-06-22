@@ -38,6 +38,7 @@ import { LevelName } from "./level-name";
 import { RecordCalendarCard } from "./record-calendar-card";
 import type { CommunityPost, PostComment } from "@/lib/types";
 import { formatDuration, cn } from "@/lib/utils";
+import { useT, useLocale, type TranslateFn, type Locale } from "@/lib/i18n";
 
 const BODY_PARTS = Object.keys(BODY_PART_LABEL) as BodyPart[];
 
@@ -48,6 +49,8 @@ export function PostDetailModal({
   post: CommunityPost;
   onClose: () => void;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   const { user } = useAuth();
   const importRoutine = useTimerStore((s) => s.importRoutine);
 
@@ -104,7 +107,7 @@ export function PostDetailModal({
 
   const isOwner = user?.uid === post.authorId;
 
-  const authorName = user?.displayName ?? user?.email ?? "익명";
+  const authorName = user?.displayName ?? user?.email ?? t("익명", "Anonymous");
 
   // Live display names (reflect the author's current nickname, not the snapshot
   // stored on the post/comment at write time).
@@ -189,7 +192,7 @@ export function PostDetailModal({
   }
 
   async function onDelete() {
-    if (!confirm("이 게시물을 삭제하시겠어요?")) return;
+    if (!confirm(t("이 게시물을 삭제하시겠어요?", "Delete this post?"))) return;
     setDeleting(true);
     try {
       await deletePost(post.id);
@@ -235,7 +238,7 @@ export function PostDetailModal({
 
   async function onDeleteComment(commentId: string) {
     if (deletingCommentId) return;
-    if (!confirm("이 댓글을 삭제할까요?")) return;
+    if (!confirm(t("이 댓글을 삭제할까요?", "Delete this comment?"))) return;
     setDeletingCommentId(commentId);
     try {
       await deleteComment(post.id, commentId);
@@ -278,7 +281,7 @@ export function PostDetailModal({
         <button
           type="button"
           onClick={onClose}
-          aria-label="닫기"
+          aria-label={t("닫기", "Close")}
           className="absolute right-3 top-3 z-20 h-9 w-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-foreground hover:bg-black/60 transition-colors"
         >
           <X size={16} />
@@ -314,7 +317,9 @@ export function PostDetailModal({
                   <LevelBadge uid={post.authorId} withTitle />
                 </p>
                 <p className="text-[11px] text-foreground-dim">
-                  {new Date(post.createdAt).toLocaleString("ko-KR")}
+                  {new Date(post.createdAt).toLocaleString(
+                    locale === "en" ? "en-US" : "ko-KR",
+                  )}
                 </p>
               </div>
             </Link>
@@ -334,7 +339,7 @@ export function PostDetailModal({
                 <button
                   type="button"
                   onClick={startEdit}
-                  aria-label="수정"
+                  aria-label={t("수정", "Edit")}
                   className="h-9 w-9 rounded-full hover:bg-surface-2 text-foreground-dim hover:text-foreground transition-colors flex items-center justify-center"
                 >
                   <Pencil size={15} />
@@ -343,7 +348,7 @@ export function PostDetailModal({
                   type="button"
                   onClick={onDelete}
                   disabled={deleting}
-                  aria-label="삭제"
+                  aria-label={t("삭제", "Delete")}
                   className="h-9 w-9 rounded-full hover:bg-surface-2 text-foreground-dim hover:text-danger transition-colors flex items-center justify-center disabled:opacity-50"
                 >
                   {deleting ? (
@@ -361,14 +366,14 @@ export function PostDetailModal({
               <input
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                placeholder="제목"
+                placeholder={t("제목", "Title")}
                 maxLength={80}
                 className="w-full h-11 bg-surface-2 border border-border-subtle rounded-xl px-4 text-[15px] font-medium focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
               />
               <textarea
                 value={editDesc}
                 onChange={(e) => setEditDesc(e.target.value)}
-                placeholder="설명 (선택)"
+                placeholder={t("설명 (선택)", "Description (optional)")}
                 maxLength={1000}
                 rows={4}
                 className="w-full bg-surface-2 border border-border-subtle rounded-xl px-4 py-3 text-[14px] leading-relaxed resize-y focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
@@ -378,7 +383,7 @@ export function PostDetailModal({
                   <input
                     value={editYoutube}
                     onChange={(e) => setEditYoutube(e.target.value)}
-                    placeholder="YouTube URL (선택)"
+                    placeholder={t("YouTube URL (선택)", "YouTube URL (optional)")}
                     className="w-full h-11 bg-surface-2 border border-border-subtle rounded-xl px-4 text-[13px] focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
                   />
                   <div className="flex flex-wrap gap-2">
@@ -411,7 +416,7 @@ export function PostDetailModal({
                   disabled={!editTitle.trim() || saving}
                 >
                   {saving && <Loader2 size={15} className="animate-spin" />}
-                  저장
+                  {t("저장", "Save")}
                 </Button>
                 <button
                   type="button"
@@ -419,7 +424,7 @@ export function PostDetailModal({
                   disabled={saving}
                   className="h-11 px-4 rounded-full text-[13px] text-foreground-muted hover:text-foreground hover:bg-surface-2 transition-colors disabled:opacity-50"
                 >
-                  취소
+                  {t("취소", "Cancel")}
                 </button>
               </div>
             </div>
@@ -452,7 +457,12 @@ export function PostDetailModal({
             <RecordCalendarCard record={post.record} />
           ) : (
             post.routine && (
-              <RoutinePreview routine={post.routine} totalSec={totalSec} />
+              <RoutinePreview
+                routine={post.routine}
+                totalSec={totalSec}
+                t={t}
+                locale={locale}
+              />
             )
           )}
 
@@ -463,10 +473,12 @@ export function PostDetailModal({
                 size="md"
                 onClick={onImport}
                 disabled={!user}
-                title={!user ? "로그인이 필요합니다" : undefined}
+                title={!user ? t("로그인이 필요합니다", "Sign in required") : undefined}
               >
                 <Download size={15} />
-                {imported ? "내 루틴에 추가됨" : "내 루틴으로 가져오기"}
+                {imported
+                  ? t("내 루틴에 추가됨", "Added to your routines")
+                  : t("내 루틴으로 가져오기", "Import to my routines")}
               </Button>
             )}
             <button
@@ -491,7 +503,7 @@ export function PostDetailModal({
 
           <section className="border-t border-border-subtle pt-5">
             <h3 className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim mb-3">
-              댓글 {post.commentCount}
+              {t("댓글", "Comments")} {post.commentCount}
             </h3>
             <ul className="flex flex-col gap-4">
               {topLevelComments.map((c) => {
@@ -505,6 +517,7 @@ export function PostDetailModal({
                       deleting={deletingCommentId === c.id}
                       onDelete={() => onDeleteComment(c.id)}
                       onReport={() => setReportingComment(c)}
+                      t={t}
                     />
 
                     {(replies.length > 0 || replyOpenId === c.id) && (
@@ -519,6 +532,7 @@ export function PostDetailModal({
                             deleting={deletingCommentId === r.id}
                             onDelete={() => onDeleteComment(r.id)}
                             onReport={() => setReportingComment(r)}
+                            t={t}
                           />
                         ))}
                         {replyOpenId === c.id && (
@@ -534,14 +548,17 @@ export function PostDetailModal({
                               autoFocus
                               value={replyText}
                               onChange={(e) => setReplyText(e.target.value)}
-                              placeholder={`${replyTargetName}님에게 답글...`}
+                              placeholder={t(
+                                `${replyTargetName}님에게 답글...`,
+                                `Reply to ${replyTargetName}...`,
+                              )}
                               maxLength={500}
                               className="flex-1 h-9 bg-surface-2 border border-border-subtle rounded-full px-3.5 text-[12px] placeholder:text-foreground-dim focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
                             />
                             <button
                               type="submit"
                               disabled={!replyText.trim() || replyPosting}
-                              aria-label="답글 전송"
+                              aria-label={t("답글 전송", "Send reply")}
                               className="h-9 w-9 rounded-full bg-accent text-background flex items-center justify-center disabled:opacity-40 transition-opacity shrink-0"
                             >
                               {replyPosting ? (
@@ -564,7 +581,7 @@ export function PostDetailModal({
                         }}
                         className="self-start ml-9 text-[11px] text-foreground-dim hover:text-foreground transition-colors"
                       >
-                        {replyOpenId === c.id ? "취소" : "답글"}
+                        {replyOpenId === c.id ? t("취소", "Cancel") : t("답글", "Reply")}
                       </button>
                     )}
                   </li>
@@ -572,7 +589,10 @@ export function PostDetailModal({
               })}
               {topLevelComments.length === 0 && (
                 <li className="text-[12px] text-foreground-dim">
-                  아직 댓글이 없어요. 첫 댓글을 남겨보세요.
+                  {t(
+                    "아직 댓글이 없어요. 첫 댓글을 남겨보세요.",
+                    "No comments yet. Be the first to comment.",
+                  )}
                 </li>
               )}
             </ul>
@@ -586,14 +606,14 @@ export function PostDetailModal({
                   type="text"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="댓글 달기..."
+                  placeholder={t("댓글 달기...", "Add a comment...")}
                   maxLength={500}
                   className="flex-1 h-11 bg-surface-2 border border-border-subtle rounded-full px-4 text-[13px] placeholder:text-foreground-dim focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
                 />
                 <button
                   type="submit"
                   disabled={!commentText.trim() || posting}
-                  aria-label="전송"
+                  aria-label={t("전송", "Send")}
                   className="h-11 w-11 rounded-full bg-accent text-background flex items-center justify-center disabled:opacity-40 transition-opacity"
                 >
                   {posting ? (
@@ -605,7 +625,7 @@ export function PostDetailModal({
               </form>
             ) : (
               <p className="mt-4 text-[12px] text-foreground-dim">
-                로그인하면 댓글을 작성할 수 있어요.
+                {t("로그인하면 댓글을 작성할 수 있어요.", "Sign in to leave a comment.")}
               </p>
             )}
           </section>
@@ -629,9 +649,13 @@ export function PostDetailModal({
 function RoutinePreview({
   routine,
   totalSec,
+  t,
+  locale,
 }: {
   routine: NonNullable<CommunityPost["routine"]>;
   totalSec: number;
+  t: TranslateFn;
+  locale: Locale;
 }) {
   return (
     <div className="rounded-2xl border border-border-subtle bg-surface-2/60 p-4">
@@ -642,9 +666,11 @@ function RoutinePreview({
         </div>
         <div className="flex items-center gap-1.5 text-[12px] text-foreground-muted">
           <TimerIcon size={13} className="text-accent" />
-          {formatDuration(totalSec)}
+          {formatDuration(totalSec, locale)}
           {routine.repeat > 1 && (
-            <span className="text-foreground-dim">· {routine.repeat}회 반복</span>
+            <span className="text-foreground-dim">
+              · {t(`${routine.repeat}회 반복`, `${routine.repeat}x repeat`)}
+            </span>
           )}
         </div>
       </div>
@@ -691,6 +717,7 @@ function CommentRow({
   onDelete,
   onReport,
   small,
+  t,
 }: {
   comment: PostComment;
   canDelete: boolean;
@@ -699,6 +726,7 @@ function CommentRow({
   onDelete: () => void;
   onReport: () => void;
   small?: boolean;
+  t: TranslateFn;
 }) {
   const name = useProfileName(c.authorId, c.authorName);
   return (
@@ -709,7 +737,7 @@ function CommentRow({
           <LevelName uid={c.authorId} name={name} className="font-medium" />
           <LevelBadge uid={c.authorId} />
           <span className="text-foreground-dim">
-            {formatRelative(c.createdAt)}
+            {formatRelative(c.createdAt, t)}
           </span>
         </p>
         <p
@@ -726,7 +754,7 @@ function CommentRow({
           type="button"
           onClick={onDelete}
           disabled={deleting}
-          aria-label="댓글 삭제"
+          aria-label={t("댓글 삭제", "Delete comment")}
           className="shrink-0 h-7 w-7 rounded-full text-foreground-dim hover:text-danger hover:bg-danger/10 transition-colors flex items-center justify-center disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
         >
           {deleting ? (
@@ -740,7 +768,7 @@ function CommentRow({
         <button
           type="button"
           onClick={onReport}
-          aria-label="댓글 신고"
+          aria-label={t("댓글 신고", "Report comment")}
           className="shrink-0 h-7 w-7 rounded-full text-foreground-dim hover:text-foreground hover:bg-surface-2 transition-colors flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
         >
           <Flag size={13} />
@@ -781,14 +809,14 @@ function Avatar({
   );
 }
 
-function formatRelative(ts: number): string {
-  if (!ts) return "방금";
+function formatRelative(ts: number, t: TranslateFn): string {
+  if (!ts) return t("방금", "just now");
   const diffMs = Date.now() - ts;
   const min = Math.floor(diffMs / 60000);
-  if (min < 1) return "방금";
-  if (min < 60) return `${min}분 전`;
+  if (min < 1) return t("방금", "just now");
+  if (min < 60) return t(`${min}분 전`, `${min}m ago`);
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간 전`;
+  if (hr < 24) return t(`${hr}시간 전`, `${hr}h ago`);
   const day = Math.floor(hr / 24);
-  return `${day}일 전`;
+  return t(`${day}일 전`, `${day}d ago`);
 }

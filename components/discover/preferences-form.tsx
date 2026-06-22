@@ -4,6 +4,19 @@ import { cn } from "@/lib/utils";
 import type { Equipment, Intensity } from "@/lib/ai-recommend";
 import { EQUIPMENT_LABEL, INTENSITY_LABEL } from "@/lib/ai-recommend";
 import { Flame, Snowflake, Zap, Dumbbell, Square, Layers } from "lucide-react";
+import { useT } from "@/lib/i18n";
+
+const INTENSITY_LABEL_EN: Record<Intensity, string> = {
+  easy: "Beginner",
+  medium: "Intermediate",
+  hard: "Advanced",
+};
+
+const EQUIPMENT_LABEL_EN: Record<Equipment, string> = {
+  bodyweight: "Bodyweight",
+  dumbbell: "Dumbbell",
+  mat: "Mat",
+};
 
 interface Props {
   minutes: number;
@@ -36,6 +49,7 @@ export function PreferencesForm({
   equipment,
   onEquipmentChange,
 }: Props) {
+  const t = useT();
   const toggleEquipment = (e: Equipment) => {
     if (equipment.includes(e)) {
       onEquipmentChange(equipment.filter((x) => x !== e));
@@ -46,7 +60,7 @@ export function PreferencesForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <Section label="시간">
+      <Section label={t("시간", "Time")}>
         <div className="flex flex-wrap gap-2">
           {DURATIONS.map((m) => (
             <button
@@ -59,13 +73,13 @@ export function PreferencesForm({
                   : "bg-surface-1 border border-border-subtle text-foreground-muted hover:text-foreground",
               )}
             >
-              {m}분
+              {t(`${m}분`, `${m} min`)}
             </button>
           ))}
         </div>
       </Section>
 
-      <Section label="강도">
+      <Section label={t("강도", "Intensity")}>
         <div className="grid grid-cols-3 gap-2">
           {(["easy", "medium", "hard"] as Intensity[]).map((i) => {
             const Icon = INTENSITY_ICONS[i];
@@ -83,7 +97,7 @@ export function PreferencesForm({
               >
                 <Icon size={16} />
                 <span className="text-[12px] font-medium">
-                  {INTENSITY_LABEL[i]}
+                  {t(INTENSITY_LABEL[i], INTENSITY_LABEL_EN[i])}
                 </span>
               </button>
             );
@@ -91,7 +105,10 @@ export function PreferencesForm({
         </div>
       </Section>
 
-      <Section label="보유 기구" hint="여러 개 선택 가능">
+      <Section
+        label={t("보유 기구", "Equipment")}
+        hint={t("여러 개 선택 가능", "Select multiple")}
+      >
         <div className="grid grid-cols-3 gap-2">
           {(["bodyweight", "dumbbell", "mat"] as Equipment[]).map((e) => {
             const Icon = EQUIPMENT_ICONS[e];
@@ -109,7 +126,7 @@ export function PreferencesForm({
               >
                 <Icon size={16} />
                 <span className="text-[12px] font-medium">
-                  {EQUIPMENT_LABEL[e]}
+                  {t(EQUIPMENT_LABEL[e], EQUIPMENT_LABEL_EN[e])}
                 </span>
               </button>
             );

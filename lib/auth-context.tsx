@@ -24,6 +24,7 @@ import {
   isStandalonePWA,
   openInExternalBrowser,
 } from "@/lib/browser-env";
+import { useLocale } from "@/lib/i18n";
 
 type AuthState =
   | { status: "unconfigured" }
@@ -44,6 +45,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const configured = isFirebaseConfigured();
+  const { locale } = useLocale();
   const [state, setState] = useState<AuthState>(
     configured ? { status: "loading" } : { status: "unconfigured" },
   );
@@ -54,7 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const auth = getFirebaseAuth();
     getRedirectResult(auth).catch((err) => {
       console.error("[auth] redirect result failed:", err);
-      setError("로그인에 실패했습니다. 다시 시도해주세요.");
+      setError(
+        locale === "en"
+          ? "Sign-in failed. Please try again."
+          : "로그인에 실패했습니다. 다시 시도해주세요.",
+      );
     });
     const unsub = onAuthStateChanged(auth, (user) => {
       setState(user ? { status: "signedIn", user } : { status: "signedOut" });
@@ -71,11 +77,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
     return unsub;
-  }, [configured]);
+  }, [configured, locale]);
 
   const signInGoogle = useCallback(async () => {
     if (!configured) {
-      setError("Firebase가 설정되지 않았습니다. .env.local을 확인해주세요.");
+      setError(
+        locale === "en"
+          ? "Firebase isn't configured. Please check .env.local."
+          : "Firebase가 설정되지 않았습니다. .env.local을 확인해주세요.",
+      );
       return;
     }
     setError(null);
@@ -89,8 +99,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const handed = openInExternalBrowser();
       setError(
         handed
-          ? "인앱 브라우저에서는 구글 로그인이 안 돼요. 외부 브라우저로 여는 중…"
-          : "인앱 브라우저에서는 구글 로그인이 안 돼요. 우측 상단 메뉴에서 ‘다른 브라우저로 열기’(Chrome·Safari)를 선택해 로그인해주세요.",
+          ? locale === "en"
+            ? "Google sign-in doesn't work in in-app browsers. Opening in an external browser…"
+            : "인앱 브라우저에서는 구글 로그인이 안 돼요. 외부 브라우저로 여는 중…"
+          : locale === "en"
+            ? "Google sign-in doesn't work in in-app browsers. From the top-right menu, choose 'Open in another browser' (Chrome/Safari) to sign in."
+            : "인앱 브라우저에서는 구글 로그인이 안 돼요. 우측 상단 메뉴에서 ‘다른 브라우저로 열기’(Chrome·Safari)를 선택해 로그인해주세요.",
       );
       return;
     }
@@ -108,7 +122,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await signInWithRedirect(auth, provider);
       } catch (e) {
         console.error("[auth] standalone redirect failed:", e);
-        setError("로그인에 실패했습니다. 다시 시도해주세요.");
+        setError(
+          locale === "en"
+            ? "Sign-in failed. Please try again."
+            : "로그인에 실패했습니다. 다시 시도해주세요.",
+        );
       }
       return;
     }
@@ -135,12 +153,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       setError(
         code === "auth/network-request-failed"
-          ? "네트워크 오류가 발생했습니다."
-          : "로그인에 실패했습니다. 다시 시도해주세요.",
+          ? locale === "en"
+            ? "A network error occurred."
+            : "네트워크 오류가 발생했습니다."
+          : locale === "en"
+            ? "Sign-in failed. Please try again."
+            : "로그인에 실패했습니다. 다시 시도해주세요.",
       );
       console.error("[auth] signIn failed:", err);
     }
-  }, [configured]);
+  }, [configured, locale]);
 
   const signOut = useCallback(async () => {
     if (!configured) return;

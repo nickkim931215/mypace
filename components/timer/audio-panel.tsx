@@ -8,6 +8,7 @@ import {
   type MetronomeSound,
 } from "@/store/timer-store";
 import { cn } from "@/lib/utils";
+import { useT, useLocale, type TranslateFn } from "@/lib/i18n";
 import { useMetronome } from "@/hooks/use-metronome";
 import { musicPlayer, type MusicPlayerState } from "@/lib/music-player";
 import {
@@ -26,11 +27,13 @@ interface Props {
   isRunning: boolean;
 }
 
-const MODES: { key: AudioMode; label: string; icon: typeof Music2 }[] = [
-  { key: "off", label: "끄기", icon: VolumeX },
-  { key: "metronome", label: "메트로놈", icon: Music2 },
+const modesFor = (
+  t: TranslateFn,
+): { key: AudioMode; label: string; icon: typeof Music2 }[] => [
+  { key: "off", label: t("끄기", "Off"), icon: VolumeX },
+  { key: "metronome", label: t("메트로놈", "Metronome"), icon: Music2 },
   { key: "bgm", label: "BGM", icon: Radio },
-  { key: "hype", label: "동기부여", icon: Flame },
+  { key: "hype", label: t("동기부여", "Hype"), icon: Flame },
 ];
 
 const sounds: { key: MetronomeSound; label: string }[] = [
@@ -40,8 +43,10 @@ const sounds: { key: MetronomeSound; label: string }[] = [
 ];
 
 export function AudioPanel({ bpm, onBpmChange, isWorkRound, isRunning }: Props) {
+  const t = useT();
   const audioMode = useTimerStore((s) => s.audioMode);
   const setAudioMode = useTimerStore((s) => s.setAudioMode);
+  const MODES = modesFor(t);
 
   return (
     <div className="card-premium p-3 sm:p-4 flex flex-col gap-3">
@@ -95,6 +100,7 @@ function MetronomeControls({
   const setMetronomeSound = useTimerStore((s) => s.setMetronomeSound);
   const metronomeVolume = useTimerStore((s) => s.metronomeVolume);
   const setMetronomeVolume = useTimerStore((s) => s.setMetronomeVolume);
+  const t = useT();
 
   useMetronome({
     enabled: active && bpm > 0,
@@ -142,13 +148,15 @@ function MetronomeControls({
         ))}
       </div>
       <VolumeRow
-        label="볼륨"
+        label={t("볼륨", "Volume")}
         value={metronomeVolume}
         onChange={setMetronomeVolume}
       />
       {!(active && bpm > 0) && (
         <p className="text-[11px] text-foreground-dim text-center">
-          {bpm > 0 ? "운동 라운드에서 박자가 울립니다" : "BPM을 설정하세요"}
+          {bpm > 0
+            ? t("운동 라운드에서 박자가 울립니다", "The beat plays during work rounds")
+            : t("BPM을 설정하세요", "Set a BPM")}
         </p>
       )}
     </div>
@@ -161,6 +169,8 @@ function BgmControls() {
   const setBgmMood = useTimerStore((s) => s.setBgmMood);
   const musicVolume = useTimerStore((s) => s.musicVolume);
   const setMusicVolume = useTimerStore((s) => s.setMusicVolume);
+  const t = useT();
+  const { locale } = useLocale();
 
   const [state, setState] = useState<MusicPlayerState>({
     status: "idle",
@@ -189,25 +199,36 @@ function BgmControls() {
               style={active ? { backgroundColor: meta.accent } : undefined}
             >
               <span className="text-base leading-none">{meta.emoji}</span>
-              <span className="text-[12px] font-semibold">{meta.label}</span>
+              <span className="text-[12px] font-semibold">
+                {locale === "en" ? meta.labelEn : meta.label}
+              </span>
             </button>
           );
         })}
       </div>
       <p className="text-[11px] text-foreground-dim text-center">
-        {BGM_META[bgmMood].tagline}
+        {locale === "en"
+          ? BGM_META[bgmMood].taglineEn
+          : BGM_META[bgmMood].tagline}
       </p>
 
       {count > 0 ? (
         <PlayingRow state={state} icon={Radio} />
       ) : (
         <StatusBox
-          title="기본 멜로디 재생 중"
-          subtitle="가사 없는 음원을 올리면 교체됩니다"
+          title={t("기본 멜로디 재생 중", "Playing default melody")}
+          subtitle={t(
+            "가사 없는 음원을 올리면 교체됩니다",
+            "Upload instrumental tracks to replace it",
+          )}
         />
       )}
 
-      <VolumeRow label="볼륨" value={musicVolume} onChange={setMusicVolume} />
+      <VolumeRow
+        label={t("볼륨", "Volume")}
+        value={musicVolume}
+        onChange={setMusicVolume}
+      />
     </div>
   );
 }
@@ -218,6 +239,8 @@ function HypeControls() {
   const setHypeFlavor = useTimerStore((s) => s.setHypeFlavor);
   const musicVolume = useTimerStore((s) => s.musicVolume);
   const setMusicVolume = useTimerStore((s) => s.setMusicVolume);
+  const t = useT();
+  const { locale } = useLocale();
 
   const [state, setState] = useState<MusicPlayerState>({
     status: "idle",
@@ -247,13 +270,17 @@ function HypeControls() {
               style={active ? { backgroundColor: meta.accent } : undefined}
             >
               <span className="text-base leading-none">{meta.emoji}</span>
-              <span className="text-[12px] font-semibold">{meta.label}</span>
+              <span className="text-[12px] font-semibold">
+                {locale === "en" ? meta.labelEn : meta.label}
+              </span>
             </button>
           );
         })}
       </div>
       <p className="text-[11px] text-foreground-dim text-center">
-        {FLAVOR_META[hypeFlavor].tagline}
+        {locale === "en"
+          ? FLAVOR_META[hypeFlavor].taglineEn
+          : FLAVOR_META[hypeFlavor].tagline}
       </p>
 
       {/* Now playing / empty state */}
@@ -261,12 +288,20 @@ function HypeControls() {
         <PlayingRow state={state} icon={Flame} />
       ) : (
         <StatusBox
-          title={`${FLAVOR_META[hypeFlavor].label} 음원 준비 중 🎵`}
-          subtitle="곧 추가됩니다"
+          title={
+            locale === "en"
+              ? `${FLAVOR_META[hypeFlavor].labelEn} tracks coming soon 🎵`
+              : `${FLAVOR_META[hypeFlavor].label} 음원 준비 중 🎵`
+          }
+          subtitle={t("곧 추가됩니다", "Coming soon")}
         />
       )}
 
-      <VolumeRow label="볼륨" value={musicVolume} onChange={setMusicVolume} />
+      <VolumeRow
+        label={t("볼륨", "Volume")}
+        value={musicVolume}
+        onChange={setMusicVolume}
+      />
     </div>
   );
 }
@@ -279,8 +314,9 @@ function PlayingRow({
   state: MusicPlayerState;
   icon: typeof Flame;
 }) {
+  const t = useT();
   const loading = state.status === "loading";
-  const title = state.current?.title ?? "대기 중";
+  const title = state.current?.title ?? t("대기 중", "Waiting");
   return (
     <div className="rounded-2xl bg-surface-2 px-3 py-2.5 flex items-center gap-3">
       <div className="h-8 w-8 rounded-xl bg-accent/15 text-accent flex items-center justify-center shrink-0">
@@ -293,10 +329,10 @@ function PlayingRow({
       <div className="flex-1 min-w-0">
         <p className="text-[10px] uppercase tracking-[0.16em] text-foreground-dim">
           {state.status === "playing"
-            ? "재생 중"
+            ? t("재생 중", "Playing")
             : state.status === "paused"
-              ? "일시정지"
-              : "재생 대기"}
+              ? t("일시정지", "Paused")
+              : t("재생 대기", "Ready")}
         </p>
         <p className="text-[13px] font-medium text-foreground truncate">
           {title}
@@ -305,7 +341,7 @@ function PlayingRow({
       <button
         onClick={() => musicPlayer.next()}
         className="h-8 w-8 rounded-full text-foreground-muted hover:text-foreground hover:bg-surface-3 flex items-center justify-center shrink-0"
-        aria-label="다음 곡"
+        aria-label={t("다음 곡", "Next track")}
       >
         <SkipForward size={16} />
       </button>

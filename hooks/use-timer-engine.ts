@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Round, Routine } from "@/lib/types";
 import { audio, speak } from "@/lib/audio";
+import { useLocale } from "@/lib/i18n";
 
 export type TimerStatus = "idle" | "running" | "paused" | "finished";
 
@@ -47,6 +48,8 @@ export function useTimerEngine({
   voiceGuideEnabled = true,
   onFinish,
 }: UseTimerOptions) {
+  const { locale } = useLocale();
+
   // Flatten routine into a played sequence (repeat * rounds)
   const sequence = useMemo(() => {
     const seq: Round[] = [];
@@ -95,9 +98,14 @@ export function useTimerEngine({
     finishedRef.current = true;
     setStatus("finished");
     audio.workoutComplete();
-    if (voiceGuideEnabled) speak("운동 완료! 수고하셨습니다");
+    if (voiceGuideEnabled)
+      speak(
+        locale === "en"
+          ? "Workout complete! Great work"
+          : "운동 완료! 수고하셨습니다",
+      );
     onFinish?.();
-  }, [onFinish, voiceGuideEnabled]);
+  }, [onFinish, voiceGuideEnabled, locale]);
 
   const stopLoop = useCallback(() => {
     if (rafRef.current !== null) {

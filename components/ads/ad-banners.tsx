@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Play, Megaphone, ArrowRight } from "lucide-react";
 import {
@@ -6,10 +8,12 @@ import {
   type AdBanner,
 } from "@/lib/ads-data";
 import type { BannerSlot } from "@/lib/inquiry";
+import { useT } from "@/lib/i18n";
 
 const SLOTS: BannerSlot[] = [1, 2, 3, 4];
 
 export function AdBanners() {
+  const t = useT();
   const bySlot = new Map<BannerSlot, AdBanner>();
   for (const b of AD_BANNERS) bySlot.set(b.slot, b);
 
@@ -21,17 +25,20 @@ export function AdBanners() {
             Featured
           </span>
           <h2 className="mt-2 font-display text-2xl sm:text-4xl tracking-[-0.02em] font-semibold">
-            지금 인기 운동 채널
+            {t("지금 인기 운동 채널", "Trending workout channels")}
           </h2>
           <p className="mt-2 text-[13px] sm:text-sm text-foreground-muted">
-            트레이너·크리에이터의 운동 채널을 만나보세요.
+            {t(
+              "트레이너·크리에이터의 운동 채널을 만나보세요.",
+              "Discover workout channels from trainers and creators.",
+            )}
           </p>
         </div>
         <Link
           href="/advertise"
           className="hidden sm:inline-flex items-center gap-1.5 text-[13px] text-foreground-muted hover:text-foreground transition-colors"
         >
-          내 채널 노출하기 <ArrowRight size={14} />
+          {t("내 채널 노출하기", "Feature your channel")} <ArrowRight size={14} />
         </Link>
       </div>
 
@@ -91,6 +98,7 @@ function FilledSlot({ ad }: { ad: AdBanner }) {
 }
 
 function EmptySlot({ slot }: { slot: BannerSlot }) {
+  const t = useT();
   return (
     <Link
       href="/advertise"
@@ -100,10 +108,10 @@ function EmptySlot({ slot }: { slot: BannerSlot }) {
         <Megaphone size={18} />
       </div>
       <div className="mt-3 text-[11px] uppercase tracking-[0.18em] text-foreground-dim">
-        배너 {slot}
+        {t("배너", "Banner")} {slot}
       </div>
       <div className="mt-1 text-[13px] text-foreground-muted group-hover:text-foreground transition-colors">
-        내 채널 노출하기
+        {t("내 채널 노출하기", "Feature your channel")}
       </div>
     </Link>
   );

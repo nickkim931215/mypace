@@ -4,8 +4,10 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n";
 
 export function Hero() {
+  const t = useT();
   return (
     <section className="relative overflow-hidden">
       {/* Background glow */}
@@ -42,20 +44,23 @@ export function Hero() {
           </span>
 
           <h1 className="mt-7 font-display text-[clamp(2.1rem,8.5vw,4.5rem)] leading-[1.05] sm:leading-[0.95] tracking-[-0.04em] font-semibold">
-            나만의 페이스로,
+            {t("나만의 페이스로,", "At your own pace,")}
             <br />
-            <span className="text-accent">리듬에 맞춰</span> 운동하다
+            <span className="text-accent">{t("리듬에 맞춰", "in rhythm")}</span>{" "}
+            {t("운동하다", "work out")}
           </h1>
 
           <p className="mt-6 max-w-xl text-balance text-[15px] sm:text-lg text-foreground-muted leading-relaxed">
-            인터벌 타이머 · 메트로놈 · AI 부위별 추천 · 루틴 커뮤니티까지.
-            모든 운동의 박자를 한 곳에서.
+            {t(
+              "인터벌 타이머 · 메트로놈 · AI 부위별 추천 · 루틴 커뮤니티까지. 모든 운동의 박자를 한 곳에서.",
+              "Interval timer · metronome · AI muscle-group picks · routine community. Every beat of your workout, in one place.",
+            )}
           </p>
 
           <div className="mt-10 flex flex-col sm:flex-row items-center gap-3">
             <Link href="/timer">
               <Button size="lg" variant="primary" className="group">
-                지금 시작하기
+                {t("지금 시작하기", "Start now")}
                 <ArrowRight
                   size={18}
                   className="transition-transform group-hover:translate-x-0.5"
@@ -64,7 +69,7 @@ export function Hero() {
             </Link>
             <Link href="/discover">
               <Button size="lg" variant="secondary">
-                AI 추천 받아보기
+                {t("AI 추천 받아보기", "Get AI picks")}
               </Button>
             </Link>
           </div>
@@ -90,7 +95,7 @@ export function Hero() {
                 00:40
               </div>
               <div className="mt-2 text-[13px] text-foreground-muted">
-                다음 — 휴식 20초
+                {t("다음 — 휴식 20초", "Next — Rest 20s")}
               </div>
             </div>
             <div className="mt-5 h-1.5 rounded-full bg-surface-3 overflow-hidden">

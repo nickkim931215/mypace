@@ -21,32 +21,59 @@ import type {
 import { BGM_ORDER, BGM_META, FLAVOR_ORDER, FLAVOR_META } from "@/lib/music-tracks";
 import { audio } from "@/lib/audio";
 import { cn } from "@/lib/utils";
+import { useT, useLocale, type TranslateFn } from "@/lib/i18n";
 
-const PACKS: {
+const packsFor = (
+  t: TranslateFn,
+): {
   id: SoundTheme;
   label: string;
   desc: string;
   Icon: typeof Sparkles;
-}[] = [
-  { id: "minimal", label: "미니멀", desc: "맑고 깔끔한 사인음", Icon: Sparkles },
-  { id: "gym-pro", label: "짐 프로", desc: "강렬한 펀치 톤", Icon: Dumbbell },
-  { id: "zen", label: "젠", desc: "부드러운 저음", Icon: Leaf },
+}[] => [
+  {
+    id: "minimal",
+    label: t("미니멀", "Minimal"),
+    desc: t("맑고 깔끔한 사인음", "Clear, clean sine tones"),
+    Icon: Sparkles,
+  },
+  {
+    id: "gym-pro",
+    label: t("짐 프로", "Gym Pro"),
+    desc: t("강렬한 펀치 톤", "Bold, punchy tones"),
+    Icon: Dumbbell,
+  },
+  {
+    id: "zen",
+    label: t("젠", "Zen"),
+    desc: t("부드러운 저음", "Soft, low tones"),
+    Icon: Leaf,
+  },
 ];
 
-const MODES: { id: AudioMode; label: string; Icon: typeof Music2 }[] = [
-  { id: "off", label: "끄기", Icon: VolumeX },
-  { id: "metronome", label: "메트로놈", Icon: Music2 },
+const modesFor = (
+  t: TranslateFn,
+): { id: AudioMode; label: string; Icon: typeof Music2 }[] => [
+  { id: "off", label: t("끄기", "Off"), Icon: VolumeX },
+  { id: "metronome", label: t("메트로놈", "Metronome"), Icon: Music2 },
   { id: "bgm", label: "BGM", Icon: Radio },
-  { id: "hype", label: "동기부여", Icon: Flame },
+  { id: "hype", label: t("동기부여", "Hype"), Icon: Flame },
 ];
 
-const METRO: { id: MetronomeSound; label: string }[] = [
-  { id: "wood", label: "우드블록" },
-  { id: "hihat", label: "하이햇" },
-  { id: "click", label: "클릭" },
+const metroFor = (
+  t: TranslateFn,
+): { id: MetronomeSound; label: string }[] => [
+  { id: "wood", label: t("우드블록", "Wood block") },
+  { id: "hihat", label: t("하이햇", "Hi-hat") },
+  { id: "click", label: t("클릭", "Click") },
 ];
 
 export function SoundSettings() {
+  const t = useT();
+  const { locale } = useLocale();
+  const PACKS = packsFor(t);
+  const MODES = modesFor(t);
+  const METRO = metroFor(t);
   const soundTheme = useTimerStore((s) => s.soundTheme);
   const setSoundTheme = useTimerStore((s) => s.setSoundTheme);
   const metronomeSound = useTimerStore((s) => s.metronomeSound);
@@ -79,8 +106,12 @@ export function SoundSettings() {
       {/* Sound pack */}
       <div className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between">
-          <span className="text-[13px] font-medium text-foreground">사운드 팩</span>
-          <span className="text-[11px] text-foreground-dim">탭하면 미리듣기</span>
+          <span className="text-[13px] font-medium text-foreground">
+            {t("사운드 팩", "Sound pack")}
+          </span>
+          <span className="text-[11px] text-foreground-dim">
+            {t("탭하면 미리듣기", "Tap to preview")}
+          </span>
         </div>
         <div className="grid grid-cols-3 gap-2">
           {PACKS.map(({ id, label, desc, Icon }) => {
@@ -120,8 +151,12 @@ export function SoundSettings() {
       {/* In-workout audio mode (matches the run screen — pre-pick it here) */}
       <div className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between">
-          <span className="text-[13px] font-medium text-foreground">운동 중 오디오</span>
-          <span className="text-[11px] text-foreground-dim">운동 시작 때 적용돼요</span>
+          <span className="text-[13px] font-medium text-foreground">
+            {t("운동 중 오디오", "In-workout audio")}
+          </span>
+          <span className="text-[11px] text-foreground-dim">
+            {t("운동 시작 때 적용돼요", "Applied when you start")}
+          </span>
         </div>
         <div className="grid grid-cols-4 gap-1.5">
           {MODES.map(({ id, label, Icon }) => {
@@ -170,7 +205,7 @@ export function SoundSettings() {
               })}
             </div>
             <p className="text-[11px] text-foreground-dim text-center">
-              BPM은 각 운동 라운드에서 설정해요
+              {t("BPM은 각 운동 라운드에서 설정해요", "Set BPM per work round")}
             </p>
           </div>
         )}
@@ -195,13 +230,17 @@ export function SoundSettings() {
                     style={active ? { backgroundColor: meta.accent } : undefined}
                   >
                     <span className="text-base leading-none">{meta.emoji}</span>
-                    <span className="text-[12px] font-semibold">{meta.label}</span>
+                    <span className="text-[12px] font-semibold">
+                      {locale === "en" ? meta.labelEn : meta.label}
+                    </span>
                   </button>
                 );
               })}
             </div>
             <p className="text-[11px] text-foreground-dim text-center">
-              {BGM_META[bgmMood].tagline}
+              {locale === "en"
+                ? BGM_META[bgmMood].taglineEn
+                : BGM_META[bgmMood].tagline}
             </p>
           </div>
         )}
@@ -226,13 +265,17 @@ export function SoundSettings() {
                     style={active ? { backgroundColor: meta.accent } : undefined}
                   >
                     <span className="text-base leading-none">{meta.emoji}</span>
-                    <span className="text-[12px] font-semibold">{meta.label}</span>
+                    <span className="text-[12px] font-semibold">
+                      {locale === "en" ? meta.labelEn : meta.label}
+                    </span>
                   </button>
                 );
               })}
             </div>
             <p className="text-[11px] text-foreground-dim text-center">
-              {FLAVOR_META[hypeFlavor].tagline}
+              {locale === "en"
+                ? FLAVOR_META[hypeFlavor].taglineEn
+                : FLAVOR_META[hypeFlavor].tagline}
             </p>
           </div>
         )}
@@ -244,7 +287,7 @@ export function SoundSettings() {
         className="flex items-center justify-between gap-3 text-left"
       >
         <span className="text-[13px] font-medium text-foreground">
-          음성 안내
+          {t("음성 안내", "Voice guide")}
         </span>
         <span
           className={cn(
@@ -255,7 +298,7 @@ export function SoundSettings() {
           )}
         >
           {voiceGuideEnabled ? <Mic size={13} /> : <MicOff size={13} />}
-          {voiceGuideEnabled ? "켜짐" : "꺼짐"}
+          {voiceGuideEnabled ? t("켜짐", "On") : t("꺼짐", "Off")}
         </span>
       </button>
 
@@ -263,7 +306,7 @@ export function SoundSettings() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => setMasterVolume(masterVolume > 0 ? 0 : 0.8)}
-          aria-label="음소거"
+          aria-label={t("음소거", "Mute")}
           className="text-foreground-dim hover:text-foreground"
         >
           {masterVolume > 0 ? <Volume2 size={18} /> : <VolumeX size={18} />}
@@ -276,7 +319,7 @@ export function SoundSettings() {
           value={masterVolume}
           onChange={(e) => setMasterVolume(Number(e.target.value))}
           className="flex-1 accent-accent"
-          aria-label="전체 볼륨"
+          aria-label={t("전체 볼륨", "Master volume")}
         />
         <span className="tabular text-[12px] text-foreground-dim w-9 text-right">
           {Math.round(masterVolume * 100)}

@@ -2,10 +2,13 @@
 
 import { getLevel, levelColor, isShimmerLevel, shimmerClass } from "@/lib/level";
 import { cn } from "@/lib/utils";
+import { useT, useLocale } from "@/lib/i18n";
 
 // Level / 칭호 card for the history page. Pure text + XP bar (no character art),
 // driven by total finished-workout count. Tinted with the level color.
 export function LevelCard({ count }: { count: number }) {
+  const t = useT();
+  const { locale } = useLocale();
   const lv = getLevel(count);
   const pct = Math.round(lv.progress * 100);
   const barWidth = lv.isMax ? 100 : Math.max(pct, 4);
@@ -30,7 +33,7 @@ export function LevelCard({ count }: { count: number }) {
             )}
             style={shimmer ? undefined : { color }}
           >
-            {lv.title}
+            {locale === "en" ? lv.titleEn : lv.title}
           </h2>
         </div>
         <div
@@ -66,7 +69,20 @@ export function LevelCard({ count }: { count: number }) {
         <div className="mt-2 flex items-center justify-between gap-2 text-[12px]">
           {lv.isMax ? (
             <span className="font-medium" style={{ color }}>
-              최고 레벨 달성 🎉 진정한 최종 병기
+              {t(
+                "최고 레벨 달성 🎉 진정한 최종 병기",
+                "Max level reached 🎉 a true Ultimate Weapon",
+              )}
+            </span>
+          ) : locale === "en" ? (
+            <span className="text-foreground-muted truncate">
+              <span className="font-semibold tabular-nums" style={{ color }}>
+                {lv.toNext}
+              </span>{" "}
+              to{" "}
+              <span className="text-foreground font-medium">
+                {lv.nextTitleEn}
+              </span>
             </span>
           ) : (
             <span className="text-foreground-muted truncate">
@@ -81,7 +97,9 @@ export function LevelCard({ count }: { count: number }) {
             </span>
           )}
           <span className="text-foreground-dim tabular-nums shrink-0">
-            {lv.isMax ? `${lv.count}회` : `${lv.inTier}/${lv.tierSpan}`}
+            {lv.isMax
+              ? t(`${lv.count}회`, `${lv.count}x`)
+              : `${lv.inTier}/${lv.tierSpan}`}
           </span>
         </div>
       </div>

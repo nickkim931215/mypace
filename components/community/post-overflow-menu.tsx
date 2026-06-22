@@ -5,6 +5,7 @@ import { MoreVertical, Flag, Ban, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { blockUser } from "@/lib/moderation";
 import { ReportDialog } from "./report-dialog";
+import { useT } from "@/lib/i18n";
 
 // Overflow (⋯) menu on someone else's post: report the post or block its
 // author. Renders nothing for the post's owner or signed-out users. Blocking
@@ -20,6 +21,7 @@ export function PostOverflowMenu({
   authorName: string;
   onBlocked?: () => void;
 }) {
+  const t = useT();
   const { user } = useAuth();
   const me = user?.uid ?? null;
   const [open, setOpen] = useState(false);
@@ -42,7 +44,10 @@ export function PostOverflowMenu({
     if (!me || blocking) return;
     if (
       !confirm(
-        `${authorName}님을 차단할까요?\n차단하면 이 사용자의 게시물과 댓글이 더 이상 보이지 않아요.`,
+        t(
+          `${authorName}님을 차단할까요?\n차단하면 이 사용자의 게시물과 댓글이 더 이상 보이지 않아요.`,
+          `Block ${authorName}?\nYou'll no longer see this user's posts or comments.`,
+        ),
       )
     )
       return;
@@ -61,7 +66,7 @@ export function PostOverflowMenu({
     <div ref={ref} className="relative shrink-0">
       <button
         type="button"
-        aria-label="더보기"
+        aria-label={t("더보기", "More")}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
@@ -85,7 +90,7 @@ export function PostOverflowMenu({
             className="flex w-full items-center gap-2.5 h-10 px-3 rounded-xl text-[13px] text-foreground-muted hover:bg-surface-2 hover:text-foreground transition-colors"
           >
             <Flag size={14} />
-            게시물 신고
+            {t("게시물 신고", "Report post")}
           </button>
           <button
             type="button"
@@ -99,7 +104,7 @@ export function PostOverflowMenu({
             ) : (
               <Ban size={14} />
             )}
-            사용자 차단
+            {t("사용자 차단", "Block user")}
           </button>
         </div>
       )}

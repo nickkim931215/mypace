@@ -1,7 +1,10 @@
+"use client";
+
 import { Flame, CalendarDays, Dumbbell } from "lucide-react";
-import { monthGrid, WEEKDAYS } from "@/lib/history";
+import { monthGrid, weekdays, formatMonthLabel } from "@/lib/history";
 import type { RecordSnapshot } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useT, useLocale } from "@/lib/i18n";
 
 // Renders a frozen workout-history snapshot: streak/week/total stats + the
 // month's calendar with completed days highlighted. Shared by the feed card,
@@ -13,37 +16,40 @@ export function RecordCalendarCard({
   record: RecordSnapshot;
   className?: string;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   const cells = monthGrid(record.year, record.month);
   const doneDays = new Set(record.days);
+  const WEEKDAYS = weekdays(locale);
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
       <div className="grid grid-cols-3 gap-2">
         <MiniStat
           icon={<Flame size={14} className="text-accent" />}
-          value={`${record.streak}일`}
-          label="연속"
+          value={t(`${record.streak}일`, `${record.streak}d`)}
+          label={t("연속", "Streak")}
           highlight={record.streak > 0}
         />
         <MiniStat
           icon={<CalendarDays size={14} className="text-accent" />}
-          value={`${record.weekCount}회`}
-          label="이번 주"
+          value={t(`${record.weekCount}회`, `${record.weekCount}x`)}
+          label={t("이번 주", "This week")}
         />
         <MiniStat
           icon={<Dumbbell size={14} className="text-accent" />}
-          value={`${record.totalCount}회`}
-          label="누적"
+          value={t(`${record.totalCount}회`, `${record.totalCount}x`)}
+          label={t("누적", "Total")}
         />
       </div>
 
       <div className="rounded-2xl border border-border-subtle bg-surface-2/50 p-4">
         <div className="flex items-baseline justify-between mb-3">
           <p className="font-display text-[15px] font-semibold tracking-tight">
-            {record.monthLabel}
+            {formatMonthLabel(record.year, record.month, locale)}
           </p>
           <p className="text-[11px] text-foreground-dim">
-            이 달 {record.monthCount}회
+            {t(`이 달 ${record.monthCount}회`, `${record.monthCount} this month`)}
           </p>
         </div>
 

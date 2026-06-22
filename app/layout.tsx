@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { LocaleProvider } from "@/lib/i18n";
 import { SyncBridge } from "@/components/sync-bridge";
 import { Pwa } from "@/components/pwa";
 import { UiSounds } from "@/components/ui-sounds";
@@ -61,13 +62,15 @@ export default function RootLayout({
               "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__bipEvent=e;window.dispatchEvent(new Event('bipready'));});window.addEventListener('appinstalled',function(){window.__bipEvent=null;window.dispatchEvent(new Event('bipinstalled'));});",
           }}
         />
-        <AuthProvider>
-          <SyncBridge />
-          <UiSounds />
-          <AnalyticsProvider />
-          {children}
-          <Pwa />
-        </AuthProvider>
+        <LocaleProvider>
+          <AuthProvider>
+            <SyncBridge />
+            <UiSounds />
+            <AnalyticsProvider />
+            {children}
+            <Pwa />
+          </AuthProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

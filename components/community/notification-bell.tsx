@@ -21,8 +21,10 @@ import {
 import type { AppNotification } from "@/lib/types";
 import { useProfileName } from "@/hooks/use-profile-name";
 import { cn } from "@/lib/utils";
+import { useT, useLocale, type Locale, type TranslateFn } from "@/lib/i18n";
 
 export function NotificationBell() {
+  const t = useT();
   const { state, configured } = useAuth();
   const router = useRouter();
   const [items, setItems] = useState<AppNotification[]>([]);
@@ -89,7 +91,11 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={openPanel}
-        aria-label={unread > 0 ? `알림 ${unread}개` : "알림"}
+        aria-label={
+          unread > 0
+            ? t(`알림 ${unread}개`, `${unread} notifications`)
+            : t("알림", "Notifications")
+        }
         aria-haspopup="menu"
         aria-expanded={open}
         className="relative h-9 w-9 rounded-full hover:bg-surface-1 flex items-center justify-center text-foreground-muted hover:text-foreground transition-colors"
@@ -108,17 +114,17 @@ export function NotificationBell() {
           className="fixed left-3 right-3 top-[calc(env(safe-area-inset-top)+4rem)] w-auto sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[340px] card-premium p-0 shadow-2xl shadow-black/40 z-50 overflow-hidden"
         >
           <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
-            <span className="text-[13px] font-semibold">알림</span>
+            <span className="text-[13px] font-semibold">{t("알림", "Notifications")}</span>
             {items.length > 0 && (
               <span className="inline-flex items-center gap-1 text-[11px] text-foreground-dim">
-                <Check size={12} /> 읽음 처리됨
+                <Check size={12} /> {t("읽음 처리됨", "Marked as read")}
               </span>
             )}
           </div>
           <div className="max-h-[60vh] overflow-y-auto overscroll-contain">
             {items.length === 0 ? (
               <p className="px-4 py-8 text-center text-[13px] text-foreground-dim">
-                아직 알림이 없어요.
+                {t("아직 알림이 없어요.", "No notifications yet.")}
               </p>
             ) : (
               <ul className="flex flex-col">
@@ -145,6 +151,8 @@ function NotificationRow({
   n: AppNotification;
   onClick: () => void;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   const actorName = useProfileName(n.actorId, n.actorName);
   return (
     <li>
@@ -162,14 +170,14 @@ function NotificationRow({
             <span className="font-medium">{actorName}</span>
             <span className="text-foreground-muted">
               {n.type === "like"
-                ? "님이 좋아요를 눌렀어요"
+                ? t("님이 좋아요를 눌렀어요", " liked your post")
                 : n.type === "reply"
-                  ? "님이 답글을 남겼어요"
+                  ? t("님이 답글을 남겼어요", " replied to you")
                   : n.type === "follow"
-                    ? "님이 회원님을 팔로우했어요"
+                    ? t("님이 회원님을 팔로우했어요", " started following you")
                     : n.type === "post"
-                      ? "님이 운동을 인증했어요 💪"
-                      : "님이 댓글을 남겼어요"}
+                      ? t("님이 운동을 인증했어요 💪", " logged a workout 💪")
+                      : t("님이 댓글을 남겼어요", " commented on your post")}
             </span>
           </p>
           {n.preview && (
@@ -179,8 +187,8 @@ function NotificationRow({
           )}
           <p className="mt-0.5 text-[11px] text-foreground-dim truncate">
             {n.type === "follow"
-              ? formatRelative(n.createdAt)
-              : `${n.postTitle} · ${formatRelative(n.createdAt)}`}
+              ? formatRelative(n.createdAt, t, locale)
+              : `${n.postTitle} · ${formatRelative(n.createdAt, t, locale)}`}
           </p>
         </div>
         {!n.read && (
@@ -238,16 +246,16 @@ function NotifIcon({
   );
 }
 
-function formatRelative(ts: number): string {
-  if (!ts) return "방금";
+function formatRelative(ts: number, t: TranslateFn, locale: Locale): string {
+  if (!ts) return t("방금", "just now");
   const min = Math.floor((Date.now() - ts) / 60000);
-  if (min < 1) return "방금";
-  if (min < 60) return `${min}분 전`;
+  if (min < 1) return t("방금", "just now");
+  if (min < 60) return t(`${min}분 전`, `${min}m ago`);
   const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간 전`;
+  if (hr < 24) return t(`${hr}시간 전`, `${hr}h ago`);
   const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}일 전`;
-  return new Date(ts).toLocaleDateString("ko-KR", {
+  if (day < 7) return t(`${day}일 전`, `${day}d ago`);
+  return new Date(ts).toLocaleDateString(locale === "en" ? "en-US" : "ko-KR", {
     month: "short",
     day: "numeric",
   });

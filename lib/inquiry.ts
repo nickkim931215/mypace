@@ -34,12 +34,22 @@ export function isValidYoutubeUrl(url: string): boolean {
 
 const PHONE_RE = /^[\d\s\-+()]{9,20}$/;
 
+// Stable codes so the client can render a localized validation message; `error`
+// keeps a Korean string as the default/fallback (used by the server route).
+export type InquiryErrorCode =
+  | "bad_format"
+  | "bad_youtube"
+  | "bad_name"
+  | "bad_phone"
+  | "bad_slot"
+  | "bad_duration";
+
 export function validateInquiry(input: unknown): {
   ok: true;
   value: InquiryInput;
-} | { ok: false; error: string } {
+} | { ok: false; error: string; code: InquiryErrorCode } {
   if (!input || typeof input !== "object") {
-    return { ok: false, error: "잘못된 요청 형식입니다." };
+    return { ok: false, error: "잘못된 요청 형식입니다.", code: "bad_format" };
   }
   const i = input as Record<string, unknown>;
 
@@ -52,19 +62,19 @@ export function validateInquiry(input: unknown): {
     typeof i.message === "string" ? i.message.trim().slice(0, 1000) : undefined;
 
   if (!isValidYoutubeUrl(youtubeUrl)) {
-    return { ok: false, error: "유효한 YouTube URL을 입력해주세요." };
+    return { ok: false, error: "유효한 YouTube URL을 입력해주세요.", code: "bad_youtube" };
   }
   if (name.length < 1 || name.length > 40) {
-    return { ok: false, error: "이름을 입력해주세요." };
+    return { ok: false, error: "이름을 입력해주세요.", code: "bad_name" };
   }
   if (!PHONE_RE.test(phone)) {
-    return { ok: false, error: "유효한 핸드폰 번호를 입력해주세요." };
+    return { ok: false, error: "유효한 핸드폰 번호를 입력해주세요.", code: "bad_phone" };
   }
   if (![1, 2, 3, 4].includes(bannerSlot)) {
-    return { ok: false, error: "배너 번호는 1~4 중 선택해주세요." };
+    return { ok: false, error: "배너 번호는 1~4 중 선택해주세요.", code: "bad_slot" };
   }
   if (![30, 60, 90].includes(durationDays)) {
-    return { ok: false, error: "노출 기간을 선택해주세요." };
+    return { ok: false, error: "노출 기간을 선택해주세요.", code: "bad_duration" };
   }
 
   return {

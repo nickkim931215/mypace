@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn, formatClock, youtubeLearnUrl } from "@/lib/utils";
 import type { RecommendResult } from "@/lib/ai-recommend";
+import { useT, useLocale } from "@/lib/i18n";
 
 interface Props {
   result: RecommendResult;
@@ -26,6 +27,8 @@ export function RecommendationResult({
   onSaveOnly,
   onRegenerate,
 }: Props) {
+  const t = useT();
+  const { locale } = useLocale();
   const totalSec = result.rounds.reduce((acc, r) => acc + r.durationSec, 0);
   const work = result.rounds.filter((r) => r.type === "work");
 
@@ -41,23 +44,24 @@ export function RecommendationResult({
           {result.source === "ai" ? (
             <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-accent/15 text-accent text-[11px] font-medium uppercase tracking-[0.16em]">
               <Sparkles size={11} />
-              AI 추천
+              {t("AI 추천", "AI pick")}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-surface-2 text-foreground-muted text-[11px] font-medium uppercase tracking-[0.16em]">
               <FlaskConical size={11} />
-              데모 모드
+              {t("데모 모드", "Demo mode")}
             </span>
           )}
           <span className="text-[11px] text-foreground-dim">
-            · {formatClock(totalSec)} · {work.length}개 운동
+            · {formatClock(totalSec)} ·{" "}
+            {t(`${work.length}개 운동`, `${work.length} exercises`)}
           </span>
         </div>
         <button
           onClick={onRegenerate}
           className="h-8 w-8 rounded-full text-foreground-dim hover:text-foreground hover:bg-surface-2 flex items-center justify-center"
-          aria-label="다시 생성"
-          title="다시 생성"
+          aria-label={t("다시 생성", "Regenerate")}
+          title={t("다시 생성", "Regenerate")}
         >
           <RotateCcw size={14} />
         </button>
@@ -119,20 +123,23 @@ export function RecommendationResult({
                 ) : null}
                 {r.type === "work" ? (
                   <a
-                    href={youtubeLearnUrl(r.name)}
+                    href={youtubeLearnUrl(r.name, locale)}
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={(e) => e.stopPropagation()}
                     className="inline-flex items-center gap-0.5 shrink-0 text-[10px] text-foreground-dim hover:text-accent transition-colors"
-                    title={`${r.name} 운동 영상 보기`}
+                    title={t(
+                      `${r.name} 운동 영상 보기`,
+                      `Watch ${r.name} demo video`,
+                    )}
                   >
                     <GraduationCap size={11} />
-                    배우기
+                    {t("배우기", "Learn")}
                   </a>
                 ) : null}
               </div>
               <span className="tabular text-[12px] text-foreground-muted shrink-0">
-                {r.durationSec}초
+                {t(`${r.durationSec}초`, `${r.durationSec}s`)}
               </span>
             </div>
           ))}
@@ -142,11 +149,11 @@ export function RecommendationResult({
       <div className="flex flex-col sm:flex-row gap-2 pt-1">
         <Button variant="primary" size="md" onClick={onSaveAndStart} className="flex-1">
           <Play size={15} fill="currentColor" />
-          저장하고 바로 시작
+          {t("저장하고 바로 시작", "Save and start")}
         </Button>
         <Button variant="secondary" size="md" onClick={onSaveOnly}>
           <BookmarkPlus size={15} />
-          저장만
+          {t("저장만", "Save only")}
         </Button>
       </div>
     </motion.div>
@@ -154,6 +161,7 @@ export function RecommendationResult({
 }
 
 export function RecommendationLoading() {
+  const t = useT();
   return (
     <div className="card-premium p-7 flex flex-col items-center justify-center gap-4 min-h-[260px]">
       <motion.div
@@ -163,10 +171,10 @@ export function RecommendationLoading() {
       />
       <div className="text-center">
         <div className="text-[15px] font-medium text-foreground">
-          AI가 루틴을 만들고 있어요
+          {t("AI가 루틴을 만들고 있어요", "AI is building your routine")}
         </div>
         <div className="mt-1 text-[12px] text-foreground-muted">
-          몇 초만 기다려 주세요…
+          {t("몇 초만 기다려 주세요…", "Just a few seconds…")}
         </div>
       </div>
     </div>
@@ -180,6 +188,7 @@ export function RecommendationError({
   message: string;
   onRetry: () => void;
 }) {
+  const t = useT();
   return (
     <div className="card-premium p-7 flex flex-col items-center text-center gap-3">
       <div className="text-[15px] font-medium text-danger">
@@ -187,7 +196,7 @@ export function RecommendationError({
       </div>
       <Button variant="secondary" size="md" onClick={onRetry}>
         <RotateCcw size={14} />
-        다시 시도
+        {t("다시 시도", "Try again")}
       </Button>
     </div>
   );

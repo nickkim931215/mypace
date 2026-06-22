@@ -10,8 +10,19 @@ import { trackEvent } from "@/lib/analytics";
 import { BODY_PART_LABEL, type BodyPart } from "@/lib/ai-recommend";
 import { formatDuration, cn } from "@/lib/utils";
 import type { Routine } from "@/lib/types";
+import { useT, type TranslateFn } from "@/lib/i18n";
 
 const BODY_PARTS = Object.keys(BODY_PART_LABEL) as BodyPart[];
+
+const BODY_PART_LABEL_EN: Record<BodyPart, string> = {
+  chest: "Chest",
+  back: "Back",
+  shoulders: "Shoulders",
+  arms: "Arms",
+  core: "Core",
+  legs: "Legs",
+  full: "Full body",
+};
 
 type Status =
   | { kind: "idle" }
@@ -20,6 +31,7 @@ type Status =
 
 export function ShareModal({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
+  const t = useT();
   const routines = useTimerStore((s) => s.routines);
   const currentRoutineId = useTimerStore((s) => s.currentRoutineId);
 
@@ -69,7 +81,7 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
     try {
       await createPost({
         authorId: user.uid,
-        authorName: user.displayName ?? user.email ?? "익명",
+        authorName: user.displayName ?? user.email ?? t("익명", "Anonymous"),
         authorPhotoURL: user.photoURL ?? null,
         title: title.trim(),
         description: description.trim(),
@@ -83,7 +95,10 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
       console.error("[community] createPost failed:", err);
       setStatus({
         kind: "error",
-        message: "게시물 작성 중 오류가 발생했습니다.",
+        message: t(
+          "게시물 작성 중 오류가 발생했습니다.",
+          "Something went wrong while creating the post.",
+        ),
       });
     }
   }
@@ -102,7 +117,7 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="닫기"
+          aria-label={t("닫기", "Close")}
           className="absolute right-3 top-3 z-20 h-9 w-9 rounded-full bg-surface-2 hover:bg-surface-3 flex items-center justify-center transition-colors"
         >
           <X size={16} />
@@ -114,15 +129,18 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
             Share
           </span>
           <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight">
-            루틴 공유하기
+            {t("루틴 공유하기", "Share routine")}
           </h2>
           <p className="mt-1.5 text-[13px] text-foreground-muted">
-            내가 만든 인터벌 루틴을 다른 사람도 한 번에 가져갈 수 있어요.
+            {t(
+              "내가 만든 인터벌 루틴을 다른 사람도 한 번에 가져갈 수 있어요.",
+              "Let others grab the interval routine you made in one tap.",
+            )}
           </p>
         </div>
 
         <form onSubmit={onSubmit} className="px-5 sm:px-8 pb-[max(2rem,env(safe-area-inset-bottom))] flex flex-col gap-6">
-          <Section label="루틴 선택">
+          <Section label={t("루틴 선택", "Select routine")}>
             <div className="flex flex-col gap-2 max-h-56 overflow-y-auto pr-1">
               {routines.map((r) => (
                 <RoutineOption
@@ -130,27 +148,28 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
                   routine={r}
                   selected={r.id === routineId}
                   onSelect={() => setRoutineId(r.id)}
+                  t={t}
                 />
               ))}
               {routines.length === 0 && (
                 <p className="text-[13px] text-foreground-dim">
-                  먼저 빌더에서 루틴을 만들어주세요.
+                  {t("먼저 빌더에서 루틴을 만들어주세요.", "Create a routine in the builder first.")}
                 </p>
               )}
             </div>
           </Section>
 
-          <Section label="제목">
+          <Section label={t("제목", "Title")}>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={80}
               required
-              placeholder="예: 출근 전 10분 코어 루틴"
+              placeholder={t("예: 출근 전 10분 코어 루틴", "e.g. 10-min core routine before work")}
             />
           </Section>
 
-          <Section label="운동 부위" hint="선택 — 여러 개 가능">
+          <Section label={t("운동 부위", "Body part")} hint={t("선택 — 여러 개 가능", "Optional — pick multiple")}>
             <div className="flex flex-wrap gap-2">
               {BODY_PARTS.map((part) => {
                 const on = bodyParts.includes(part);
@@ -166,25 +185,25 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
                         : "border-border-subtle bg-surface-2 text-foreground-muted hover:border-border-strong",
                     )}
                   >
-                    {BODY_PART_LABEL[part]}
+                    {t(BODY_PART_LABEL[part], BODY_PART_LABEL_EN[part])}
                   </button>
                 );
               })}
             </div>
           </Section>
 
-          <Section label="설명" hint="선택">
+          <Section label={t("설명", "Description")} hint={t("선택", "Optional")}>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               maxLength={500}
-              placeholder="이 루틴을 어떤 사람이 어떻게 쓰면 좋을지 적어주세요."
+              placeholder={t("이 루틴을 어떤 사람이 어떻게 쓰면 좋을지 적어주세요.", "Describe who this routine is for and how to use it.")}
               className="w-full bg-surface-2 border border-border-subtle rounded-2xl px-4 py-3 text-[13px] placeholder:text-foreground-dim focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all resize-none"
             />
           </Section>
 
-          <Section label="YouTube URL" hint="선택 — 시범 영상이 있다면">
+          <Section label="YouTube URL" hint={t("선택 — 시범 영상이 있다면", "Optional — if you have a demo video")}>
             <Input
               type="url"
               inputMode="url"
@@ -195,7 +214,7 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
             />
             {ytTouched && !ytValid && (
               <p className="mt-2 text-[12px] text-danger">
-                올바른 YouTube 링크를 입력해주세요.
+                {t("올바른 YouTube 링크를 입력해주세요.", "Please enter a valid YouTube link.")}
               </p>
             )}
           </Section>
@@ -203,7 +222,7 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
           {!user && (
             <p className="text-[12px] text-danger flex items-center gap-2">
               <AlertCircle size={13} />
-              공유하려면 먼저 로그인해주세요.
+              {t("공유하려면 먼저 로그인해주세요.", "Please sign in first to share.")}
             </p>
           )}
 
@@ -226,7 +245,9 @@ export function ShareModal({ onClose }: { onClose: () => void }) {
             ) : (
               <Share2 size={15} />
             )}
-            {status.kind === "submitting" ? "게시 중..." : "게시하기"}
+            {status.kind === "submitting"
+              ? t("게시 중...", "Posting...")
+              : t("게시하기", "Post")}
           </Button>
         </form>
         </div>
@@ -239,10 +260,12 @@ function RoutineOption({
   routine,
   selected,
   onSelect,
+  t,
 }: {
   routine: Routine;
   selected: boolean;
   onSelect: () => void;
+  t: TranslateFn;
 }) {
   const total = routine.totalDurationSec * routine.repeat;
   return (
@@ -267,7 +290,7 @@ function RoutineOption({
       <div className="min-w-0 flex-1">
         <p className="text-[14px] font-medium truncate">{routine.name}</p>
         <p className="text-[11px] text-foreground-dim">
-          {routine.rounds.length}개 라운드 · {formatDuration(total)}
+          {t(`${routine.rounds.length}개 라운드`, `${routine.rounds.length} rounds`)} · {formatDuration(total)}
         </p>
       </div>
     </button>

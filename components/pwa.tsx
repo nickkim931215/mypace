@@ -7,6 +7,7 @@ import {
   isStandalonePWA,
   openInExternalBrowser,
 } from "@/lib/browser-env";
+import { useT } from "@/lib/i18n";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -27,6 +28,7 @@ const DISMISS_KEY = "mypace-install-dismissed";
 type Mode = "prompt" | "ios" | "manual" | "inapp";
 
 export function Pwa() {
+  const t = useT();
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(
     null,
   );
@@ -148,26 +150,28 @@ export function Pwa() {
   if (!mode) return null;
 
   const title =
-    mode === "inapp" ? "기본 브라우저에서 설치하세요" : "앱으로 설치하시겠어요?";
+    mode === "inapp"
+      ? t("기본 브라우저에서 설치하세요", "Install in your default browser")
+      : t("앱으로 설치하시겠어요?", "Install as an app?");
 
   const subtitle =
     mode === "inapp"
-      ? "지금은 앱 안의 브라우저라 설치가 안 돼요."
-      : "홈 화면에 추가하면 앱처럼 빠르게 실행돼요.";
+      ? t("지금은 앱 안의 브라우저라 설치가 안 돼요.", "You're in an in-app browser, so installing isn't possible here.")
+      : t("홈 화면에 추가하면 앱처럼 빠르게 실행돼요.", "Add it to your home screen to launch fast, just like an app.");
 
   const primaryLabel =
     mode === "prompt"
-      ? "설치"
+      ? t("설치", "Install")
       : mode === "inapp"
-        ? "브라우저로 열기"
-        : "설치 방법";
+        ? t("브라우저로 열기", "Open in browser")
+        : t("설치 방법", "How to install");
 
   const stepsText =
     mode === "ios"
-      ? "사파리 공유 버튼 → ‘홈 화면에 추가’를 누르세요."
+      ? t("사파리 공유 버튼 → ‘홈 화면에 추가’를 누르세요.", "Tap the Safari Share button → 'Add to Home Screen'.")
       : mode === "inapp"
-        ? "우측 상단 메뉴(⋮) → ‘다른 브라우저로 열기’(Chrome·Safari)를 선택하세요."
-        : "브라우저 메뉴(⋮) → ‘앱 설치’ 또는 ‘홈 화면에 추가’를 누르세요.";
+        ? t("우측 상단 메뉴(⋮) → ‘다른 브라우저로 열기’(Chrome·Safari)를 선택하세요.", "Top-right menu (⋮) → choose 'Open in another browser' (Chrome/Safari).")
+        : t("브라우저 메뉴(⋮) → ‘앱 설치’ 또는 ‘홈 화면에 추가’를 누르세요.", "Browser menu (⋮) → tap 'Install app' or 'Add to Home Screen'.");
 
   const PrimaryIcon =
     mode === "inapp" ? ExternalLink : mode === "ios" ? Share : Download;
@@ -197,7 +201,7 @@ export function Pwa() {
           </button>
           <button
             onClick={close}
-            aria-label="닫기"
+            aria-label={t("닫기", "Close")}
             className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-foreground-dim hover:text-foreground hover:bg-surface-2"
           >
             <X size={16} />

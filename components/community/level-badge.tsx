@@ -3,6 +3,7 @@
 import { useProfileLevel } from "@/hooks/use-profile-name";
 import { LEVEL_TIERS, levelColor, isShimmerLevel, shimmerClass } from "@/lib/level";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n";
 
 // Small level chip (Lv.N + optional 칭호) next to a nickname in the community.
 // Tinted with the level color; 인간병기 shimmers green, 최종 병기 shimmers gold.
@@ -15,6 +16,7 @@ export function LevelBadge({
   withTitle?: boolean;
 }) {
   const level = useProfileLevel(uid);
+  const { locale } = useLocale();
   if (!level) return null;
   const tier = LEVEL_TIERS[Math.min(Math.max(level, 1), LEVEL_TIERS.length) - 1];
   const color = levelColor(level);
@@ -24,7 +26,11 @@ export function LevelBadge({
   const inner = (
     <>
       <span className="tabular-nums">Lv.{level}</span>
-      {withTitle && tier && <span className="font-medium">{tier.title}</span>}
+      {withTitle && tier && (
+        <span className="font-medium">
+          {locale === "en" ? tier.titleEn : tier.title}
+        </span>
+      )}
     </>
   );
 

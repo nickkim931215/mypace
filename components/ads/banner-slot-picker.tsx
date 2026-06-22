@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { BannerSlot } from "@/lib/inquiry";
+import { useT } from "@/lib/i18n";
 
 interface Props {
   selected: BannerSlot;
@@ -11,6 +12,7 @@ interface Props {
 const SLOTS: BannerSlot[] = [1, 2, 3, 4];
 
 export function BannerSlotPicker({ selected, onSelect }: Props) {
+  const t = useT();
   return (
     <div className="grid grid-cols-4 gap-2">
       {SLOTS.map((n) => {
@@ -28,7 +30,7 @@ export function BannerSlotPicker({ selected, onSelect }: Props) {
             )}
           >
             <span className="text-[11px] uppercase tracking-[0.15em] opacity-70">
-              배너
+              {t("배너", "Banner")}
             </span>
             <span className="font-display text-2xl font-semibold tabular">
               {n}

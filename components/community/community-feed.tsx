@@ -17,8 +17,10 @@ import { PostDetailModal } from "./post-detail-modal";
 import { ShareModal } from "./share-modal";
 import { RecordShareModal } from "./record-share-modal";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export function CommunityFeed() {
+  const t = useT();
   const { state, user, configured, signInGoogle } = useAuth();
   const signedIn = state.status === "signedIn";
   const canLoadFeed = configured && signedIn;
@@ -112,8 +114,11 @@ export function CommunityFeed() {
   if (!configured) {
     return (
       <EmptyState
-        title="Firebase 설정이 필요해요"
-        description="커뮤니티는 Firestore 위에서 동작합니다. .env.local 에 Firebase 키를 채워주세요."
+        title={t("Firebase 설정이 필요해요", "Firebase setup required")}
+        description={t(
+          "커뮤니티는 Firestore 위에서 동작합니다. .env.local 에 Firebase 키를 채워주세요.",
+          "The community runs on Firestore. Add your Firebase keys to .env.local.",
+        )}
       />
     );
   }
@@ -133,10 +138,13 @@ export function CommunityFeed() {
           <Users size={24} />
         </div>
         <h2 className="mt-5 font-display text-2xl font-semibold tracking-tight">
-          로그인하고 커뮤니티 둘러보기
+          {t("로그인하고 커뮤니티 둘러보기", "Sign in to explore the community")}
         </h2>
         <p className="mt-2 text-foreground-muted text-[14px] max-w-md leading-relaxed">
-          다른 사람들이 만든 인터벌 루틴을 보고, 마음에 드는 건 한 번에 내 라이브러리로 가져올 수 있어요.
+          {t(
+            "다른 사람들이 만든 인터벌 루틴을 보고, 마음에 드는 건 한 번에 내 라이브러리로 가져올 수 있어요.",
+            "Browse interval routines made by others and add the ones you like to your library in one tap.",
+          )}
         </p>
         <Button
           variant="primary"
@@ -145,7 +153,7 @@ export function CommunityFeed() {
           onClick={() => void signInGoogle()}
         >
           <LogIn size={15} />
-          Google 로 로그인
+          {t("Google 로 로그인", "Sign in with Google")}
         </Button>
       </div>
     );
@@ -171,25 +179,34 @@ export function CommunityFeed() {
       {/* Tabs */}
       <div className="flex items-center gap-1 p-1 rounded-full bg-surface-2 border border-border-subtle w-fit mb-5">
         <TabButton active={tab === "routine"} onClick={() => setTab("routine")}>
-          루틴 {routinePosts.length > 0 && `(${routinePosts.length})`}
+          {t("루틴", "Routines")} {routinePosts.length > 0 && `(${routinePosts.length})`}
         </TabButton>
         <TabButton active={isRecord} onClick={() => setTab("record")}>
-          기록 {recordPosts.length > 0 && `(${recordPosts.length})`}
+          {t("기록", "Records")} {recordPosts.length > 0 && `(${recordPosts.length})`}
         </TabButton>
         <TabButton active={isFollowing} onClick={() => setTab("following")}>
-          팔로잉 {followingPosts.length > 0 && `(${followingPosts.length})`}
+          {t("팔로잉", "Following")} {followingPosts.length > 0 && `(${followingPosts.length})`}
         </TabButton>
       </div>
 
       <div className="flex items-center justify-between gap-3 mb-6">
         <p className="text-[13px] text-foreground-muted">
           {loading
-            ? "불러오는 중..."
+            ? t("불러오는 중...", "Loading...")
             : isFollowing
-              ? "내가 팔로우한 사람들의 새 소식이에요."
+              ? t(
+                  "내가 팔로우한 사람들의 새 소식이에요.",
+                  "The latest from people you follow.",
+                )
               : isRecord
-                ? "다른 사람들의 운동 기록을 구경하고 응원해요."
-                : "마음에 드는 루틴은 한 번에 내 라이브러리로 가져오세요."}
+                ? t(
+                    "다른 사람들의 운동 기록을 구경하고 응원해요.",
+                    "Check out and cheer on others' workout records.",
+                  )
+                : t(
+                    "마음에 드는 루틴은 한 번에 내 라이브러리로 가져오세요.",
+                    "Add routines you like to your library in one tap.",
+                  )}
         </p>
         {isFollowing ? null : isRecord ? (
           <Button
@@ -198,14 +215,14 @@ export function CommunityFeed() {
             onClick={() => setRecordShareOpen(true)}
           >
             <Trophy size={15} />
-            <span className="hidden sm:inline">기록 자랑하기</span>
-            <span className="sm:hidden">자랑</span>
+            <span className="hidden sm:inline">{t("기록 자랑하기", "Show off record")}</span>
+            <span className="sm:hidden">{t("자랑", "Show off")}</span>
           </Button>
         ) : (
           <Button variant="primary" size="md" onClick={() => setShareOpen(true)}>
             <Plus size={15} />
-            <span className="hidden sm:inline">루틴 공유하기</span>
-            <span className="sm:hidden">공유</span>
+            <span className="hidden sm:inline">{t("루틴 공유하기", "Share routine")}</span>
+            <span className="sm:hidden">{t("공유", "Share")}</span>
           </Button>
         )}
       </div>
@@ -232,18 +249,30 @@ export function CommunityFeed() {
           title={
             isFollowing
               ? followingIds.length === 0
-                ? "아직 팔로우한 사람이 없어요"
-                : "팔로우한 사람들의 새 글이 없어요"
+                ? t("아직 팔로우한 사람이 없어요", "You're not following anyone yet")
+                : t(
+                    "팔로우한 사람들의 새 글이 없어요",
+                    "No new posts from people you follow",
+                  )
               : isRecord
-                ? "아직 공유된 기록이 없어요"
-                : "아직 비어있어요"
+                ? t("아직 공유된 기록이 없어요", "No records shared yet")
+                : t("아직 비어있어요", "Nothing here yet")
           }
           description={
             isFollowing
-              ? "게시글을 열어 작성자를 팔로우하면 여기에 모여요."
+              ? t(
+                  "게시글을 열어 작성자를 팔로우하면 여기에 모여요.",
+                  "Open a post and follow its author to see them here.",
+                )
               : isRecord
-                ? "가장 먼저 내 운동 기록을 자랑해보세요."
-                : "가장 먼저 루틴을 공유해보세요."
+                ? t(
+                    "가장 먼저 내 운동 기록을 자랑해보세요.",
+                    "Be the first to show off your workout record.",
+                  )
+                : t(
+                    "가장 먼저 루틴을 공유해보세요.",
+                    "Be the first to share a routine.",
+                  )
           }
         />
       ) : (

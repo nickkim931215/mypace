@@ -5,6 +5,17 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { BodyPart } from "@/lib/ai-recommend";
 import { BODY_PART_LABEL } from "@/lib/ai-recommend";
+import { useT } from "@/lib/i18n";
+
+const BODY_PART_LABEL_EN: Record<BodyPart, string> = {
+  chest: "Chest",
+  back: "Back",
+  shoulders: "Shoulders",
+  arms: "Arms",
+  core: "Core",
+  legs: "Legs",
+  full: "Full body",
+};
 
 interface Props {
   selected: BodyPart | null;
@@ -58,6 +69,7 @@ const ZONES: { id: BodyPart; paths: string[] }[] = [
 ];
 
 export function BodySelector({ selected, onSelect }: Props) {
+  const t = useT();
   return (
     <div className="grid grid-cols-[62%_1fr] gap-3 sm:grid-cols-[1fr_220px] sm:gap-10 items-center">
       {/* Mannequin figure with clickable muscle hotspots */}
@@ -67,7 +79,7 @@ export function BodySelector({ selected, onSelect }: Props) {
       >
         <Image
           src="/discover/mannequin2.png"
-          alt="부위 선택"
+          alt={t("부위 선택", "Body part selection")}
           fill
           sizes="240px"
           className="object-cover select-none pointer-events-none"
@@ -124,7 +136,7 @@ export function BodySelector({ selected, onSelect }: Props) {
       {/* Side menu with all parts (incl. back and full body) */}
       <div className="flex flex-col gap-2">
         <span className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim px-1 mb-1">
-          부위
+          {t("부위", "Body part")}
         </span>
         <div className="grid grid-cols-1 gap-2">
           {(Object.keys(BODY_PART_LABEL) as BodyPart[]).map((part) => {
@@ -141,7 +153,7 @@ export function BodySelector({ selected, onSelect }: Props) {
                     : "bg-surface-1 border border-border-subtle text-foreground-muted hover:text-foreground hover:border-border-strong",
                 )}
               >
-                <span>{BODY_PART_LABEL[part]}</span>
+                <span>{t(BODY_PART_LABEL[part], BODY_PART_LABEL_EN[part])}</span>
                 {isSelected && (
                   <svg
                     width="14"

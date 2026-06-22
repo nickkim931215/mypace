@@ -20,8 +20,9 @@ import { audio } from "@/lib/audio";
 import { ProgressRing } from "./progress-ring";
 import { AudioPanel } from "./audio-panel";
 import { useWorkoutAudio } from "@/hooks/use-workout-audio";
-import { formatClock, cn } from "@/lib/utils";
+import { formatClock, formatDuration, cn } from "@/lib/utils";
 import { trackEvent } from "@/lib/analytics";
+import { useT, useLocale } from "@/lib/i18n";
 import type { Routine } from "@/lib/types";
 
 interface Props {
@@ -29,6 +30,8 @@ interface Props {
 }
 
 export function RunScreen({ routine }: Props) {
+  const t = useT();
+  const { locale } = useLocale();
   const router = useRouter();
   const masterVolume = useTimerStore((s) => s.masterVolume);
   const setMasterVolume = useTimerStore((s) => s.setMasterVolume);
@@ -193,7 +196,7 @@ export function RunScreen({ routine }: Props) {
         <button
           onClick={exit}
           className="h-10 w-10 rounded-full bg-surface-1 hover:bg-surface-2 border border-border-subtle flex items-center justify-center text-foreground-muted"
-          aria-label="닫기"
+          aria-label={t("닫기", "Close")}
         >
           <X size={18} />
         </button>
@@ -213,7 +216,7 @@ export function RunScreen({ routine }: Props) {
               ? "bg-surface-1 text-foreground-muted"
               : "bg-surface-1 text-foreground-dim",
           )}
-          aria-label="음성 안내"
+          aria-label={t("음성 안내", "Voice guide")}
         >
           {voiceGuideEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
         </button>
@@ -259,7 +262,7 @@ export function RunScreen({ routine }: Props) {
             </span>
             {routine.repeat > 1 && (
               <span className="text-foreground-dim">
-                · 라운드 {snapshot.repeatIdx + 1} / {routine.repeat}
+                · {t("라운드", "Set")} {snapshot.repeatIdx + 1} / {routine.repeat}
               </span>
             )}
           </span>
@@ -303,17 +306,19 @@ export function RunScreen({ routine }: Props) {
         <div className="mt-8 text-[13px] text-foreground-muted text-center min-h-[20px]">
           {snapshot.nextRound ? (
             <>
-              <span className="text-foreground-dim">다음 — </span>
+              <span className="text-foreground-dim">{t("다음 — ", "Next — ")}</span>
               <span className="text-foreground-muted">
                 {snapshot.nextRound.name}
               </span>
               <span className="text-foreground-dim">
                 {" "}
-                · {snapshot.nextRound.durationSec}초
+                · {formatDuration(snapshot.nextRound.durationSec, locale)}
               </span>
             </>
           ) : (
-            <span className="text-foreground-dim">마지막 라운드</span>
+            <span className="text-foreground-dim">
+              {t("마지막 라운드", "Last round")}
+            </span>
           )}
         </div>
       </div>
@@ -351,7 +356,7 @@ export function RunScreen({ routine }: Props) {
               onClick={prev}
               disabled={snapshot.status === "idle"}
               className="h-12 w-12 rounded-full bg-surface-1 hover:bg-surface-2 border border-border-subtle disabled:opacity-40 flex items-center justify-center text-foreground-muted"
-              aria-label="이전"
+              aria-label={t("이전", "Previous")}
             >
               <SkipBack size={18} />
             </button>
@@ -360,7 +365,7 @@ export function RunScreen({ routine }: Props) {
               <button
                 onClick={pause}
                 className="h-16 w-16 rounded-full bg-accent text-black flex items-center justify-center glow-accent active:scale-95 transition-transform"
-                aria-label="일시정지"
+                aria-label={t("일시정지", "Pause")}
               >
                 <Pause size={22} fill="currentColor" />
               </button>
@@ -374,7 +379,7 @@ export function RunScreen({ routine }: Props) {
                       : handleStart()
                 }
                 className="h-16 w-16 rounded-full bg-accent text-black flex items-center justify-center glow-accent active:scale-95 transition-transform"
-                aria-label="재생"
+                aria-label={t("재생", "Play")}
               >
                 <Play size={22} fill="currentColor" />
               </button>
@@ -384,7 +389,7 @@ export function RunScreen({ routine }: Props) {
               onClick={skip}
               disabled={snapshot.status === "idle"}
               className="h-12 w-12 rounded-full bg-surface-1 hover:bg-surface-2 border border-border-subtle disabled:opacity-40 flex items-center justify-center text-foreground-muted"
-              aria-label="다음"
+              aria-label={t("다음", "Next")}
             >
               <SkipForward size={18} />
             </button>
@@ -406,6 +411,7 @@ function FinishedScreen({
   onRestart: () => void;
   onExit: () => void;
 }) {
+  const t = useT();
   const rateRoutine = useTimerStore((s) => s.rateRoutine);
   const savedRating = useTimerStore(
     (s) => s.routines.find((r) => r.id === routine.id)?.rating,
@@ -443,17 +449,17 @@ function FinishedScreen({
         </svg>
       </motion.div>
       <h1 className="font-display text-4xl sm:text-5xl tracking-[-0.03em] font-semibold">
-        수고하셨습니다
+        {t("수고하셨습니다", "Great work")}
       </h1>
       <p className="mt-3 text-foreground-muted text-[15px]">
         {routine.name} · {formatClock(routine.totalDurationSec * routine.repeat)}{" "}
-        완료
+        {t("완료", "complete")}
       </p>
 
       {/* Star rating — rate this routine 1–5 stars. Saved immediately. */}
       <div className="mt-9 flex flex-col items-center gap-2">
         <span className="text-[12px] uppercase tracking-[0.18em] text-foreground-dim">
-          이 루틴 평가
+          {t("이 루틴 평가", "Rate this routine")}
         </span>
         <div className="flex items-center gap-1.5">
           {[1, 2, 3, 4, 5].map((n) => (
@@ -463,7 +469,7 @@ function FinishedScreen({
               onClick={() => handleRate(n)}
               onMouseEnter={() => setHovered(n)}
               onMouseLeave={() => setHovered(0)}
-              aria-label={`${n}점`}
+              aria-label={t(`${n}점`, `${n} stars`)}
               className="p-1 active:scale-90 transition-transform"
             >
               <Star
@@ -479,7 +485,9 @@ function FinishedScreen({
           ))}
         </div>
         <span className="h-5 text-[13px] text-foreground-muted">
-          {savedRating ? `${savedRating}점으로 저장됨 ✓` : "별을 눌러 평가하세요"}
+          {savedRating
+            ? t(`${savedRating}점으로 저장됨 ✓`, `Saved as ${savedRating} stars ✓`)
+            : t("별을 눌러 평가하세요", "Tap a star to rate")}
         </span>
       </div>
 
@@ -488,13 +496,13 @@ function FinishedScreen({
           onClick={onRestart}
           className="h-12 px-6 rounded-full bg-accent text-black font-medium"
         >
-          한 번 더
+          {t("한 번 더", "Once more")}
         </button>
         <button
           onClick={onExit}
           className="h-12 px-6 rounded-full bg-surface-1 border border-border-subtle text-foreground"
         >
-          종료
+          {t("종료", "Exit")}
         </button>
       </div>
 
@@ -502,7 +510,7 @@ function FinishedScreen({
         href="/history"
         className="mt-6 text-[13px] text-foreground-muted hover:text-accent transition-colors"
       >
-        내 기록 보기 →
+        {t("내 기록 보기 →", "View my history →")}
       </Link>
       </div>
     </div>

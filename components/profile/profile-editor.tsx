@@ -24,16 +24,49 @@ import {
   NicknameInvalidError,
   NicknameTakenError,
   NICKNAME_MAX,
+  NICKNAME_MIN,
   AGE_RANGES,
   AGE_RANGE_LABEL,
+  AGE_RANGE_LABEL_EN,
   GENDERS,
   GENDER_LABEL,
+  GENDER_LABEL_EN,
   type AgeRange,
   type Gender,
 } from "@/lib/profile";
 import { cn } from "@/lib/utils";
+import { useT, useLocale, type TranslateFn } from "@/lib/i18n";
 import { getFollowCounts, type FollowCounts } from "@/lib/follow";
 import { UserSearch } from "@/components/community/user-search";
+
+// Map a thrown nickname error to a localized message. Uses stable reason codes
+// (and the typed taken/invalid errors) so the copy follows the active locale
+// rather than echoing the raw Korean `err.message`.
+function nicknameErrorMessage(err: unknown, t: TranslateFn): string {
+  if (err instanceof NicknameTakenError) {
+    return t("이미 사용 중인 닉네임이에요.", "That nickname is already taken.");
+  }
+  if (err instanceof NicknameInvalidError) {
+    switch (err.code) {
+      case "too_short":
+        return t(
+          `닉네임은 ${NICKNAME_MIN}자 이상이어야 해요.`,
+          `Nickname must be at least ${NICKNAME_MIN} characters.`,
+        );
+      case "too_long":
+        return t(
+          `닉네임은 ${NICKNAME_MAX}자 이하여야 해요.`,
+          `Nickname must be at most ${NICKNAME_MAX} characters.`,
+        );
+      case "bad_chars":
+        return t(
+          "한글·영문·숫자와 _ . - 만 사용할 수 있어요.",
+          "Only letters, numbers, and _ . - are allowed.",
+        );
+    }
+  }
+  return t("올바르지 않은 닉네임이에요.", "That nickname isn't valid.");
+}
 
 type CheckState =
   | { kind: "idle" }
@@ -42,13 +75,17 @@ type CheckState =
   | { kind: "error"; message: string };
 
 export function ProfileEditor() {
+  const t = useT();
   const { state, configured, signInGoogle } = useAuth();
 
   if (!configured) {
     return (
       <Card>
         <p className="text-[14px] text-foreground-muted">
-          Firebase가 설정되지 않아 프로필을 사용할 수 없어요.
+          {t(
+            "Firebase가 설정되지 않아 프로필을 사용할 수 없어요.",
+            "Firebase isn't configured, so profiles aren't available.",
+          )}
         </p>
       </Card>
     );
@@ -64,10 +101,10 @@ export function ProfileEditor() {
     return (
       <Card>
         <p className="text-[14px] text-foreground-muted">
-          로그인하면 프로필을 수정할 수 있어요.
+          {t("로그인하면 프로필을 수정할 수 있어요.", "Sign in to edit your profile.")}
         </p>
         <Button className="mt-4" onClick={() => void signInGoogle()}>
-          구글로 로그인
+          {t("구글로 로그인", "Sign in with Google")}
         </Button>
       </Card>
     );
@@ -77,6 +114,8 @@ export function ProfileEditor() {
 }
 
 function Editor() {
+  const t = useT();
+  const { locale } = useLocale();
   const { user } = useAuth();
   const uid = user!.uid;
   const photo = user!.photoURL;
@@ -138,29 +177,43 @@ function Editor() {
     } catch (err) {
       setCheck({
         kind: "error",
-        message:
-          err instanceof NicknameInvalidError ? err.message : "올바르지 않은 닉네임이에요.",
+        message: nicknameErrorMessage(err, t),
       });
       return;
     }
     setCheck({ kind: "checking" });
     const seq = ++checkSeq.current;
-    const t = setTimeout(() => {
+    const timer = setTimeout(() => {
       isNicknameAvailable(clean, uid)
         .then((free) => {
           if (seq !== checkSeq.current) return; // stale
           setCheck(
             free
-              ? { kind: "ok", message: "사용 가능한 닉네임이에요." }
-              : { kind: "error", message: "이미 사용 중인 닉네임이에요." },
+              ? {
+                  kind: "ok",
+                  message: t(
+                    "사용 가능한 닉네임이에요.",
+                    "That nickname is available.",
+                  ),
+                }
+              : {
+                  kind: "error",
+                  message: t(
+                    "이미 사용 중인 닉네임이에요.",
+                    "That nickname is already taken.",
+                  ),
+                },
           );
         })
         .catch(() => {
           if (seq !== checkSeq.current) return;
-          setCheck({ kind: "error", message: "확인 중 오류가 났어요." });
+          setCheck({
+            kind: "error",
+            message: t("확인 중 오류가 났어요.", "Something went wrong while checking."),
+          });
         });
     }, 400);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, loaded, unchanged]);
 
@@ -178,8 +231,8 @@ function Editor() {
       console.error("[profile] setNickname failed:", err);
       const message =
         err instanceof NicknameTakenError || err instanceof NicknameInvalidError
-          ? err.message
-          : "저장에 실패했어요. 다시 시도해주세요.";
+          ? nicknameErrorMessage(err, t)
+          : t("저장에 실패했어요. 다시 시도해주세요.", "Couldn't save. Please try again.");
       setCheck({ kind: "error", message });
     } finally {
       setSaving(false);
@@ -239,16 +292,19 @@ function Editor() {
           )}
         </div>
         <div className="flex items-center gap-5 shrink-0 pr-1">
-          <Stat label="팔로워" value={counts?.followers} />
-          <Stat label="팔로잉" value={counts?.following} />
+          <Stat label={t("팔로워", "Followers")} value={counts?.followers} />
+          <Stat label={t("팔로잉", "Following")} value={counts?.following} />
         </div>
       </div>
 
       <label className="mt-7 block text-[13px] font-medium text-foreground-muted">
-        닉네임
+        {t("닉네임", "Nickname")}
       </label>
       <p className="mt-1 text-[12px] text-foreground-dim">
-        커뮤니티에 표시되는 이름이에요. 바꾸면 예전에 쓴 글·댓글에도 모두 새 닉네임이 반영돼요.
+        {t(
+          "커뮤니티에 표시되는 이름이에요. 바꾸면 예전에 쓴 글·댓글에도 모두 새 닉네임이 반영돼요.",
+          "This is the name shown in the community. Changing it updates your old posts and comments too.",
+        )}
       </p>
       <div className="mt-3 flex items-center gap-2">
         <div className="relative flex-1">
@@ -261,24 +317,24 @@ function Editor() {
             value={value}
             onChange={(e) => setValue(e.target.value)}
             maxLength={NICKNAME_MAX}
-            placeholder="닉네임 입력"
+            placeholder={t("닉네임 입력", "Enter a nickname")}
             disabled={!loaded}
             className="w-full h-11 bg-surface-2 border border-border-subtle rounded-xl pl-10 pr-3 text-[14px] placeholder:text-foreground-dim focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
           />
         </div>
         <Button onClick={() => void onSave()} disabled={!canSave}>
-          {saving ? <Loader2 size={15} className="animate-spin" /> : "저장"}
+          {saving ? <Loader2 size={15} className="animate-spin" /> : t("저장", "Save")}
         </Button>
       </div>
 
       <div className="mt-2.5 min-h-[20px] text-[12px]">
         {saved ? (
           <span className="inline-flex items-center gap-1.5 text-accent">
-            <Check size={13} /> 닉네임을 변경했어요.
+            <Check size={13} /> {t("닉네임을 변경했어요.", "Nickname updated.")}
           </span>
         ) : check.kind === "checking" ? (
           <span className="inline-flex items-center gap-1.5 text-foreground-dim">
-            <Loader2 size={13} className="animate-spin" /> 확인 중…
+            <Loader2 size={13} className="animate-spin" /> {t("확인 중…", "Checking…")}
           </span>
         ) : check.kind === "ok" ? (
           <span className="inline-flex items-center gap-1.5 text-accent">
@@ -293,9 +349,14 @@ function Editor() {
 
       {/* Demographics — shown on your public profile. Optional. */}
       <div className="mt-7 border-t border-border-subtle pt-6">
-        <p className="text-[13px] font-medium text-foreground-muted">연령대</p>
+        <p className="text-[13px] font-medium text-foreground-muted">
+          {t("연령대", "Age range")}
+        </p>
         <p className="mt-1 text-[12px] text-foreground-dim">
-          공개 프로필에 표시돼요. 선택 시 바로 저장돼요.
+          {t(
+            "공개 프로필에 표시돼요. 선택 시 바로 저장돼요.",
+            "Shown on your public profile. Saved as soon as you select.",
+          )}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {AGE_RANGES.map((a) => (
@@ -305,12 +366,14 @@ function Editor() {
               disabled={!loaded}
               onClick={() => void chooseAge(a)}
             >
-              {AGE_RANGE_LABEL[a]}
+              {locale === "en" ? AGE_RANGE_LABEL_EN[a] : AGE_RANGE_LABEL[a]}
             </Chip>
           ))}
         </div>
 
-        <p className="mt-5 text-[13px] font-medium text-foreground-muted">성별</p>
+        <p className="mt-5 text-[13px] font-medium text-foreground-muted">
+          {t("성별", "Gender")}
+        </p>
         <div className="mt-3 flex flex-wrap gap-2">
           {GENDERS.map((g) => (
             <Chip
@@ -319,14 +382,14 @@ function Editor() {
               disabled={!loaded}
               onClick={() => void chooseGender(g)}
             >
-              {GENDER_LABEL[g]}
+              {locale === "en" ? GENDER_LABEL_EN[g] : GENDER_LABEL[g]}
             </Chip>
           ))}
         </div>
       </div>
     </Card>
 
-    <UserSearch title="닉네임으로 친구찾기" />
+    <UserSearch title={t("닉네임으로 친구찾기", "Find friends by nickname")} />
 
     <AccountDeleteCard />
     </div>
@@ -336,6 +399,7 @@ function Editor() {
 // Danger zone: permanently delete the account + all personal data. Required by
 // Google Play for apps with sign-in.
 function AccountDeleteCard() {
+  const t = useT();
   const { user } = useAuth();
   const router = useRouter();
   const [phase, setPhase] = useState<"idle" | "confirm" | "deleting" | "error">(
@@ -356,8 +420,14 @@ function AccountDeleteCard() {
       setMessage(
         code === "auth/popup-closed-by-user" ||
           code === "auth/cancelled-popup-request"
-          ? "재인증이 취소됐어요. 다시 시도해주세요."
-          : "삭제에 실패했어요. 다시 로그인한 뒤 시도하거나 문의해주세요.",
+          ? t(
+              "재인증이 취소됐어요. 다시 시도해주세요.",
+              "Re-authentication was cancelled. Please try again.",
+            )
+          : t(
+              "삭제에 실패했어요. 다시 로그인한 뒤 시도하거나 문의해주세요.",
+              "Deletion failed. Sign in again and retry, or contact us.",
+            ),
       );
       setPhase("error");
     }
@@ -369,17 +439,19 @@ function AccountDeleteCard() {
     <Card>
       <div className="flex items-center gap-2 text-danger">
         <AlertTriangle size={16} />
-        <h3 className="text-[14px] font-semibold">계정 삭제</h3>
+        <h3 className="text-[14px] font-semibold">{t("계정 삭제", "Delete account")}</h3>
       </div>
       <p className="mt-2 text-[13px] text-foreground-muted leading-relaxed">
-        계정을 삭제하면 프로필·닉네임·운동 기록·루틴·작성한 글·팔로우·알림이
-        모두 영구 삭제돼요. 되돌릴 수 없어요.
+        {t(
+          "계정을 삭제하면 프로필·닉네임·운동 기록·루틴·작성한 글·팔로우·알림이 모두 영구 삭제돼요. 되돌릴 수 없어요.",
+          "Deleting your account permanently removes your profile, nickname, workout records, routines, posts, follows, and notifications. This can't be undone.",
+        )}
       </p>
       <Link
         href="/account-deletion"
         className="mt-1.5 inline-block text-[12px] text-foreground-dim underline underline-offset-2 hover:text-foreground"
       >
-        삭제되는 데이터 자세히 보기
+        {t("삭제되는 데이터 자세히 보기", "See what data gets deleted")}
       </Link>
 
       {phase === "error" && (
@@ -392,7 +464,10 @@ function AccountDeleteCard() {
       {phase === "confirm" || phase === "deleting" ? (
         <div className="mt-4 rounded-2xl border border-danger/30 bg-danger/10 p-4">
           <p className="text-[13px] text-foreground">
-            정말 계정을 삭제할까요? 이 작업은 되돌릴 수 없어요.
+            {t(
+              "정말 계정을 삭제할까요? 이 작업은 되돌릴 수 없어요.",
+              "Really delete your account? This can't be undone.",
+            )}
           </p>
           <div className="mt-3 flex gap-2">
             <button
@@ -402,7 +477,7 @@ function AccountDeleteCard() {
               className="h-10 px-4 rounded-xl text-[13px] font-semibold bg-danger text-white hover:brightness-110 transition-all disabled:opacity-60 inline-flex items-center gap-1.5"
             >
               {busy && <Loader2 size={14} className="animate-spin" />}
-              {busy ? "삭제 중…" : "영구 삭제"}
+              {busy ? t("삭제 중…", "Deleting…") : t("영구 삭제", "Delete permanently")}
             </button>
             <button
               type="button"
@@ -410,7 +485,7 @@ function AccountDeleteCard() {
               disabled={busy}
               className="h-10 px-4 rounded-xl text-[13px] font-medium bg-surface-2 text-foreground-muted hover:bg-surface-3 transition-colors disabled:opacity-60"
             >
-              취소
+              {t("취소", "Cancel")}
             </button>
           </div>
         </div>
@@ -423,7 +498,7 @@ function AccountDeleteCard() {
           }}
           className="mt-4 h-10 px-4 rounded-xl text-[13px] font-semibold border border-danger/40 text-danger hover:bg-danger/10 transition-colors"
         >
-          계정 삭제
+          {t("계정 삭제", "Delete account")}
         </button>
       )}
     </Card>

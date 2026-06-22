@@ -36,18 +36,29 @@ export const BGM_ORDER: BgmMood[] = ["boost", "flow"];
 
 export const BGM_META: Record<
   BgmMood,
-  { label: string; emoji: string; tagline: string; accent: string }
+  {
+    label: string;
+    labelEn: string;
+    emoji: string;
+    tagline: string;
+    taglineEn: string;
+    accent: string;
+  }
 > = {
   boost: {
     label: "부스트",
+    labelEn: "Boost",
     emoji: "⚡",
     tagline: "심박수 끌어올리는 비트",
+    taglineEn: "Beats that lift your heart rate",
     accent: "var(--accent)",
   },
   flow: {
     label: "플로우",
+    labelEn: "Flow",
     emoji: "🌊",
     tagline: "흐름 타는 잔잔한 사운드",
+    taglineEn: "Calm sounds to ride the flow",
     accent: "var(--rest)",
   },
 };
@@ -56,24 +67,37 @@ export const FLAVOR_ORDER: HypeFlavor[] = ["mild", "medium", "spicy"];
 
 export const FLAVOR_META: Record<
   HypeFlavor,
-  { label: string; emoji: string; tagline: string; accent: string }
+  {
+    label: string;
+    labelEn: string;
+    emoji: string;
+    tagline: string;
+    taglineEn: string;
+    accent: string;
+  }
 > = {
   mild: {
     label: "순한맛",
+    labelEn: "Mild",
     emoji: "🌱",
     tagline: "긍정·응원으로만 가득",
+    taglineEn: "Pure positivity and cheering",
     accent: "var(--rest)",
   },
   medium: {
     label: "덜매운맛",
+    labelEn: "Medium",
     emoji: "🌶️",
     tagline: "적당히 따끔한 자극",
+    taglineEn: "A pointed but fair nudge",
     accent: "#f59e0b",
   },
   spicy: {
     label: "매운맛",
+    labelEn: "Spicy",
     emoji: "🔥",
     tagline: "악담 수준의 다이어트 쓴소리",
+    taglineEn: "Savage diet roasting 🔥",
     accent: "#ef4444",
   },
 };

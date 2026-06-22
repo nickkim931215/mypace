@@ -22,10 +22,27 @@ import type {
 } from "@/lib/ai-recommend";
 import { BODY_PART_LABEL } from "@/lib/ai-recommend";
 import { useTimerStore } from "@/store/timer-store";
+import { useT, useLocale, type TranslateFn } from "@/lib/i18n";
 
 type Status = "idle" | "loading" | "ready" | "error";
 
+const BODY_PART_LABEL_EN: Record<BodyPart, string> = {
+  chest: "Chest",
+  back: "Back",
+  shoulders: "Shoulders",
+  arms: "Arms",
+  core: "Core",
+  legs: "Legs",
+  full: "Full body",
+};
+
+function bodyPartLabel(part: BodyPart, t: TranslateFn) {
+  return t(BODY_PART_LABEL[part], BODY_PART_LABEL_EN[part]);
+}
+
 export default function DiscoverPage() {
+  const t = useT();
+  const { locale } = useLocale();
   const router = useRouter();
   const createRoutine = useTimerStore((s) => s.createRoutine);
   const selectRoutine = useTimerStore((s) => s.selectRoutine);
@@ -54,9 +71,11 @@ export default function DiscoverPage() {
           minutes,
           intensity,
           equipment,
+          locale,
         }),
       });
-      if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
+      if (!res.ok)
+        throw new Error(t(`서버 오류 (${res.status})`, `Server error (${res.status})`));
       const data = (await res.json()) as RecommendResult;
       setResult(data);
       setStatus("ready");
@@ -67,7 +86,7 @@ export default function DiscoverPage() {
         source: data.source,
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "AI 호출 실패");
+      setError(e instanceof Error ? e.message : t("AI 호출 실패", "AI request failed"));
       setStatus("error");
     }
   };
@@ -99,11 +118,13 @@ export default function DiscoverPage() {
             AI Workout
           </span>
           <h1 className="mt-3 font-display text-3xl sm:text-5xl tracking-[-0.03em] font-semibold">
-            부위 하나만 골라주세요.
+            {t("부위 하나만 골라주세요.", "Just pick one body part.")}
           </h1>
           <p className="mt-3 text-foreground-muted text-[15px] leading-relaxed max-w-xl">
-            오늘의 운동 루틴을 만들어 드릴게요. 시간, 강도, 보유 기구만
-            알려주시면 됩니다.
+            {t(
+              "오늘의 운동 루틴을 만들어 드릴게요. 시간, 강도, 보유 기구만 알려주시면 됩니다.",
+              "We'll build today's workout routine for you. Just tell us the time, intensity, and equipment you have.",
+            )}
           </p>
         </header>
 
@@ -128,20 +149,20 @@ export default function DiscoverPage() {
               {bodyPart ? (
                 <>
                   <span className="text-foreground font-medium">
-                    {BODY_PART_LABEL[bodyPart]}
+                    {bodyPartLabel(bodyPart, t)}
                   </span>
                   <span className="text-foreground-dim">
                     {" "}
-                    · {minutes}분 ·{" "}
+                    · {t(`${minutes}분`, `${minutes} min`)} ·{" "}
                     {intensity === "easy"
-                      ? "초급"
+                      ? t("초급", "Beginner")
                       : intensity === "medium"
-                        ? "중급"
-                        : "고급"}
+                        ? t("중급", "Intermediate")
+                        : t("고급", "Advanced")}
                   </span>
                 </>
               ) : (
-                "부위를 먼저 선택하세요"
+                t("부위를 먼저 선택하세요", "Select a body part first")
               )}
             </div>
             <Button
@@ -151,7 +172,9 @@ export default function DiscoverPage() {
               disabled={!canGenerate || status === "loading"}
             >
               <Sparkles size={14} />
-              {status === "loading" ? "생성 중…" : "루틴 추천 받기"}
+              {status === "loading"
+                ? t("생성 중…", "Generating…")
+                : t("루틴 추천 받기", "Get routine")}
             </Button>
           </div>
         </div>

@@ -19,7 +19,10 @@ export async function POST(req: Request) {
 
   const result = validateInquiry(body);
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
+    return NextResponse.json(
+      { error: result.error, code: result.code },
+      { status: 400 },
+    );
   }
 
   const inquiry = result.value;

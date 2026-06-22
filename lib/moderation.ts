@@ -34,13 +34,17 @@ export type ReportReason =
   | "misinfo"
   | "other";
 
-export const REPORT_REASONS: { key: ReportReason; label: string }[] = [
-  { key: "spam", label: "스팸 / 광고" },
-  { key: "harassment", label: "괴롭힘 / 혐오 발언" },
-  { key: "sexual", label: "음란물 / 선정성" },
-  { key: "violence", label: "폭력 / 위험한 행동" },
-  { key: "misinfo", label: "허위 정보" },
-  { key: "other", label: "기타" },
+export const REPORT_REASONS: {
+  key: ReportReason;
+  label: string;
+  labelEn: string;
+}[] = [
+  { key: "spam", label: "스팸 / 광고", labelEn: "Spam / Ads" },
+  { key: "harassment", label: "괴롭힘 / 혐오 발언", labelEn: "Harassment / Hate speech" },
+  { key: "sexual", label: "음란물 / 선정성", labelEn: "Sexual / Explicit" },
+  { key: "violence", label: "폭력 / 위험한 행동", labelEn: "Violence / Dangerous acts" },
+  { key: "misinfo", label: "허위 정보", labelEn: "Misinformation" },
+  { key: "other", label: "기타", labelEn: "Other" },
 ];
 
 export interface SubmitReportInput {

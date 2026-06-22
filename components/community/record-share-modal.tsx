@@ -17,6 +17,7 @@ import { trackEvent } from "@/lib/analytics";
 import { buildRecordSnapshot, startOfDay } from "@/lib/history";
 import { RecordCalendarCard } from "./record-calendar-card";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 type Status =
   | { kind: "idle" }
@@ -25,6 +26,7 @@ type Status =
 
 export function RecordShareModal({ onClose }: { onClose: () => void }) {
   const { user } = useAuth();
+  const t = useT();
   const completions = useTimerStore((s) => s.completions);
 
   const today = useMemo(() => startOfDay(new Date()), []);
@@ -39,7 +41,10 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
   );
 
   const [title, setTitle] = useState(
-    `${today.getMonth() + 1}월 운동 기록 🔥`,
+    t(
+      `${today.getMonth() + 1}월 운동 기록 🔥`,
+      `Workout log for month ${today.getMonth() + 1} 🔥`,
+    ),
   );
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -73,7 +78,7 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
     try {
       await createRecordPost({
         authorId: user.uid,
-        authorName: user.displayName ?? user.email ?? "익명",
+        authorName: user.displayName ?? user.email ?? t("익명", "Anonymous"),
         authorPhotoURL: user.photoURL ?? null,
         title: title.trim(),
         description: description.trim(),
@@ -85,7 +90,10 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
       console.error("[community] createRecordPost failed:", err);
       setStatus({
         kind: "error",
-        message: "기록 공유 중 오류가 발생했습니다.",
+        message: t(
+          "기록 공유 중 오류가 발생했습니다.",
+          "Something went wrong while sharing your record.",
+        ),
       });
     }
   }
@@ -104,7 +112,7 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="닫기"
+          aria-label={t("닫기", "Close")}
           className="absolute right-3 top-3 z-20 h-9 w-9 rounded-full bg-surface-2 hover:bg-surface-3 flex items-center justify-center transition-colors"
         >
           <X size={16} />
@@ -116,11 +124,13 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
               Brag
             </span>
             <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight">
-              내 기록 자랑하기
+              {t("내 기록 자랑하기", "Show off my record")}
             </h2>
             <p className="mt-1.5 text-[13px] text-foreground-muted">
-              지금까지의 운동 기록을 캡처해서 커뮤니티에 공유해요. 공유 후
-              운동을 더 해도 이 카드는 그대로 박제돼요.
+              {t(
+                "지금까지의 운동 기록을 캡처해서 커뮤니티에 공유해요. 공유 후 운동을 더 해도 이 카드는 그대로 박제돼요.",
+                "Capture your workout record so far and share it with the community. Even if you work out more after sharing, this card stays frozen as is.",
+              )}
             </p>
           </div>
 
@@ -133,7 +143,7 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 onClick={() => shiftMonth(-1)}
-                aria-label="이전 달"
+                aria-label={t("이전 달", "Previous month")}
                 className="h-9 w-9 rounded-full hover:bg-surface-2 flex items-center justify-center text-foreground-muted transition-colors"
               >
                 <ChevronLeft size={18} />
@@ -143,7 +153,7 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
                 type="button"
                 onClick={() => shiftMonth(1)}
                 disabled={isCurrentMonth}
-                aria-label="다음 달"
+                aria-label={t("다음 달", "Next month")}
                 className="h-9 w-9 rounded-full hover:bg-surface-2 flex items-center justify-center text-foreground-muted transition-colors disabled:opacity-30"
               >
                 <ChevronRight size={18} />
@@ -157,14 +167,14 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
 
             <div className="flex flex-col gap-2">
               <span className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim">
-                제목
+                {t("제목", "Title")}
               </span>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 maxLength={80}
                 required
-                placeholder="예: 이번 달도 꾸준히 완료!"
+                placeholder={t("예: 이번 달도 꾸준히 완료!", "e.g. Stayed consistent this month too!")}
                 className="h-12 w-full bg-surface-2 border border-border-subtle rounded-full px-5 text-[14px] placeholder:text-foreground-dim focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
               />
             </div>
@@ -172,16 +182,16 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
             <div className="flex flex-col gap-2">
               <div className="flex items-baseline gap-2">
                 <span className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim">
-                  한마디
+                  {t("한마디", "A note")}
                 </span>
-                <span className="text-[11px] text-foreground-dim">— 선택</span>
+                <span className="text-[11px] text-foreground-dim">— {t("선택", "Optional")}</span>
               </div>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 maxLength={500}
-                placeholder="이번 달 운동하면서 느낀 점을 적어보세요."
+                placeholder={t("이번 달 운동하면서 느낀 점을 적어보세요.", "Share how you felt working out this month.")}
                 className="w-full bg-surface-2 border border-border-subtle rounded-2xl px-4 py-3 text-[13px] placeholder:text-foreground-dim focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all resize-none"
               />
             </div>
@@ -189,13 +199,13 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
             {empty && (
               <p className="text-[12px] text-danger flex items-center gap-2">
                 <AlertCircle size={13} />
-                아직 완료한 운동이 없어요. 먼저 루틴을 완료해보세요.
+                {t("아직 완료한 운동이 없어요. 먼저 루틴을 완료해보세요.", "You haven't completed any workouts yet. Finish a routine first.")}
               </p>
             )}
             {!user && (
               <p className="text-[12px] text-danger flex items-center gap-2">
                 <AlertCircle size={13} />
-                공유하려면 먼저 로그인해주세요.
+                {t("공유하려면 먼저 로그인해주세요.", "Please sign in first to share.")}
               </p>
             )}
 
@@ -218,7 +228,9 @@ export function RecordShareModal({ onClose }: { onClose: () => void }) {
               ) : (
                 <Trophy size={15} />
               )}
-              {status.kind === "submitting" ? "공유 중..." : "기록 공유하기"}
+              {status.kind === "submitting"
+                ? t("공유 중...", "Sharing...")
+                : t("기록 공유하기", "Share record")}
             </Button>
           </form>
         </div>

@@ -8,7 +8,9 @@ import { useAuth } from "@/lib/auth-context";
 import {
   subscribeProfile,
   AGE_RANGE_LABEL,
+  AGE_RANGE_LABEL_EN,
   GENDER_LABEL,
+  GENDER_LABEL_EN,
   type Profile,
 } from "@/lib/profile";
 import { getFollowCounts, type FollowCounts } from "@/lib/follow";
@@ -18,11 +20,14 @@ import { FollowButton } from "@/components/community/follow-button";
 import { ReportDialog } from "@/components/community/report-dialog";
 import { LevelBadge } from "@/components/community/level-badge";
 import { cn } from "@/lib/utils";
+import { useT, useLocale } from "@/lib/i18n";
 
 // Public, read-only profile for any user, reached from a nickname tap. Shows
 // identity (avatar + nickname + level/칭호), self-declared demographics, follow
 // counts, and a follow button. Live-subscribed so renames/level-ups reflect.
 export function PublicProfile({ uid }: { uid: string }) {
+  const t = useT();
+  const { locale } = useLocale();
   const { user } = useAuth();
   const me = user?.uid ?? null;
   const isMe = me === uid;
@@ -67,7 +72,7 @@ export function PublicProfile({ uid }: { uid: string }) {
     return (
       <Card>
         <p className="text-[14px] text-foreground-muted">
-          존재하지 않는 사용자예요.
+          {t("존재하지 않는 사용자예요.", "This user doesn't exist.")}
         </p>
         <BackLink />
       </Card>
@@ -107,12 +112,16 @@ export function PublicProfile({ uid }: { uid: string }) {
           <div className="mt-3 flex items-center gap-1.5">
             {profile.ageRange && (
               <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-surface-2 text-[12px] font-medium text-foreground-muted">
-                {AGE_RANGE_LABEL[profile.ageRange]}
+                {locale === "en"
+                  ? AGE_RANGE_LABEL_EN[profile.ageRange]
+                  : AGE_RANGE_LABEL[profile.ageRange]}
               </span>
             )}
             {profile.gender && (
               <span className="inline-flex items-center h-6 px-2.5 rounded-full bg-surface-2 text-[12px] font-medium text-foreground-muted">
-                {GENDER_LABEL[profile.gender]}
+                {locale === "en"
+                  ? GENDER_LABEL_EN[profile.gender]
+                  : GENDER_LABEL[profile.gender]}
               </span>
             )}
           </div>
@@ -120,8 +129,8 @@ export function PublicProfile({ uid }: { uid: string }) {
 
         {/* Stats */}
         <div className="mt-5 flex items-center gap-8">
-          <Stat label="팔로워" value={counts?.followers} />
-          <Stat label="팔로잉" value={counts?.following} />
+          <Stat label={t("팔로워", "Followers")} value={counts?.followers} />
+          <Stat label={t("팔로잉", "Following")} value={counts?.following} />
         </div>
 
         {/* Action */}
@@ -131,7 +140,7 @@ export function PublicProfile({ uid }: { uid: string }) {
               href="/profile"
               className="inline-flex w-full items-center justify-center h-10 rounded-full bg-surface-2 text-[13px] font-medium text-foreground-muted hover:text-foreground border border-border-subtle transition-colors"
             >
-              내 프로필 편집
+              {t("내 프로필 편집", "Edit my profile")}
             </Link>
           ) : (
             <FollowButton
@@ -169,6 +178,7 @@ function ModerationActions({
   targetName: string;
   blocked: boolean;
 }) {
+  const t = useT();
   const [reporting, setReporting] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -177,7 +187,10 @@ function ModerationActions({
     if (
       !blocked &&
       !confirm(
-        `${targetName}님을 차단할까요?\n차단하면 이 사용자의 게시물과 댓글이 더 이상 보이지 않아요.`,
+        t(
+          `${targetName}님을 차단할까요?\n차단하면 이 사용자의 게시물과 댓글이 더 이상 보이지 않아요.`,
+          `Block ${targetName}?\nYou won't see this user's posts or comments anymore.`,
+        ),
       )
     )
       return;
@@ -200,7 +213,7 @@ function ModerationActions({
         className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[12px] text-foreground-dim hover:text-foreground hover:bg-surface-2 transition-colors"
       >
         <Flag size={13} />
-        신고
+        {t("신고", "Report")}
       </button>
       <button
         type="button"
@@ -218,7 +231,7 @@ function ModerationActions({
         ) : (
           <Ban size={13} />
         )}
-        {blocked ? "차단 해제" : "차단"}
+        {blocked ? t("차단 해제", "Unblock") : t("차단", "Block")}
       </button>
 
       {reporting && (
@@ -234,12 +247,13 @@ function ModerationActions({
 }
 
 function BackLink() {
+  const t = useT();
   return (
     <Link
       href="/community"
       className="inline-flex items-center gap-1.5 text-[13px] text-foreground-dim hover:text-foreground transition-colors"
     >
-      <ArrowLeft size={15} /> 커뮤니티
+      <ArrowLeft size={15} /> {t("커뮤니티", "Community")}
     </Link>
   );
 }

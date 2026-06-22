@@ -3,27 +3,32 @@
 import { Check } from "lucide-react";
 import { LEVEL_TIERS, getLevel, isShimmerLevel, shimmerClass } from "@/lib/level";
 import { cn } from "@/lib/utils";
+import { useT, useLocale } from "@/lib/i18n";
 
 // A compact, pretty overview of the whole 7-tier level ladder — each tier shown
 // in its own color, current tier highlighted, cleared tiers checked.
 export function LevelLadder({ count }: { count: number }) {
+  const t = useT();
+  const { locale } = useLocale();
   const current = getLevel(count).level;
 
   return (
     <div className="card-premium p-5 sm:p-6">
       <div className="flex items-center justify-between mb-5">
         <h2 className="font-display text-lg font-semibold tracking-tight">
-          레벨 사다리
+          {t("레벨 사다리", "Level ladder")}
         </h2>
         <span className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim">
-          7단계
+          {t("7단계", "7 tiers")}
         </span>
       </div>
 
       <ol className="flex flex-col">
         {LEVEL_TIERS.map((tier, i) => {
           const next = LEVEL_TIERS[i + 1];
-          const range = next ? `${tier.min}~${next.min - 1}회` : `${tier.min}회+`;
+          const range = next
+            ? t(`${tier.min}~${next.min - 1}회`, `${tier.min}–${next.min - 1}x`)
+            : t(`${tier.min}회+`, `${tier.min}x+`);
           const isCurrent = tier.level === current;
           const isDone = tier.level < current;
           const isUpcoming = tier.level > current;
@@ -96,7 +101,7 @@ export function LevelLadder({ count }: { count: number }) {
                     )}
                     style={shimmer ? undefined : { color }}
                   >
-                    {tier.title}
+                    {locale === "en" ? tier.titleEn : tier.title}
                   </p>
                   <p className="text-[11px] text-foreground-dim tabular-nums">
                     {range}
@@ -107,7 +112,7 @@ export function LevelLadder({ count }: { count: number }) {
                     className="shrink-0 text-[10px] font-semibold rounded-full px-2 py-0.5"
                     style={{ backgroundColor: `${color}26`, color }}
                   >
-                    현재
+                    {t("현재", "Current")}
                   </span>
                 )}
               </div>

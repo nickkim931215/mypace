@@ -10,6 +10,7 @@ import {
 } from "@/lib/follow";
 import { createNotification } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 // Follow/unfollow toggle for another user. Renders nothing for signed-out
 // users or when pointed at yourself. State is driven by a live subscription so
@@ -26,6 +27,7 @@ export function FollowButton({
   onChange?: (following: boolean) => void;
 }) {
   const { user } = useAuth();
+  const t = useT();
   const me = user?.uid ?? null;
   const [following, setFollowing] = useState(false);
   const [ready, setReady] = useState(false);
@@ -57,7 +59,7 @@ export function FollowButton({
           recipientId: targetUid,
           type: "follow",
           actorId: me,
-          actorName: user?.displayName ?? user?.email ?? "익명",
+          actorName: user?.displayName ?? user?.email ?? t("익명", "Anonymous"),
           actorPhotoURL: user?.photoURL ?? null,
         }).catch(() => {});
       } else {
@@ -95,7 +97,7 @@ export function FollowButton({
       ) : (
         <UserPlus size={isSm ? 13 : 14} />
       )}
-      {following ? "팔로잉" : "팔로우"}
+      {following ? t("팔로잉", "Following") : t("팔로우", "Follow")}
     </button>
   );
 }

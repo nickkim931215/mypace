@@ -1,6 +1,29 @@
 import type { RecordSnapshot, WorkoutCompletion } from "@/lib/types";
 
+export type Locale = "ko" | "en";
+
 export const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+export const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export function weekdays(locale: Locale): string[] {
+  return locale === "en" ? WEEKDAYS_EN : WEEKDAYS;
+}
+
+const MONTHS_EN = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+// Localized "month year" label. `month` is 0-indexed (matches Date.getMonth()).
+export function formatMonthLabel(
+  year: number,
+  month: number,
+  locale: Locale,
+): string {
+  return locale === "en"
+    ? `${MONTHS_EN[month]} ${year}`
+    : `${year}년 ${month + 1}월`;
+}
 
 function pad(n: number): string {
   return n < 10 ? `0${n}` : `${n}`;

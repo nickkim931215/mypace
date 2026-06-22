@@ -8,8 +8,10 @@ import { RoutineHeader } from "@/components/builder/routine-header";
 import { RoundList } from "@/components/builder/round-list";
 import { AddRoundBar } from "@/components/builder/add-round-bar";
 import { SoundSettings } from "@/components/timer/sound-settings";
+import { useT } from "@/lib/i18n";
 
 export default function TimerBuilderPage() {
+  const t = useT();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
 
@@ -45,7 +47,7 @@ export default function TimerBuilderPage() {
         <RoutineHeader routine={routine} />
         <div className="mt-10 flex flex-col gap-2">
           <span className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim px-1">
-            라운드
+            {t("라운드", "Rounds")}
           </span>
           <RoundList routine={routine} />
           <AddRoundBar routineId={routine.id} />
@@ -53,7 +55,7 @@ export default function TimerBuilderPage() {
 
         <div className="mt-10 flex flex-col gap-2">
           <span className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim px-1">
-            사운드 & 설정
+            {t("사운드 & 설정", "Sound & Settings")}
           </span>
           <SoundSettings />
         </div>

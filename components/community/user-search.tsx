@@ -15,12 +15,14 @@ import { useAuth } from "@/lib/auth-context";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { FollowButton } from "./follow-button";
 import { LevelBadge } from "./level-badge";
+import { useT, type TranslateFn } from "@/lib/i18n";
 
 // Search users by nickname and follow them straight from the results. Debounced
 // prefix search against the public /profiles index. Each result shows level,
 // age/gender, and follower/following counts; tapping the row opens the public
 // profile. Used in the 팔로잉 tab and on the profile page (친구찾기).
 export function UserSearch({ title }: { title?: string }) {
+  const t = useT();
   const { user } = useAuth();
   const me = user?.uid ?? null;
   const blockedIds = useBlockedIds();
@@ -70,7 +72,7 @@ export function UserSearch({ title }: { title?: string }) {
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="닉네임으로 사용자 검색"
+          placeholder={t("닉네임으로 사용자 검색", "Search users by nickname")}
           className="w-full h-11 bg-surface-2 border border-border-subtle rounded-xl pl-10 pr-9 text-[14px] placeholder:text-foreground-dim focus:outline-none focus:border-border-strong focus:ring-2 focus:ring-accent/30 transition-all"
         />
         {loading && (
@@ -88,11 +90,11 @@ export function UserSearch({ title }: { title?: string }) {
             <div className="mt-3 flex flex-col gap-0.5">
               {visible.length === 0 ? (
                 <p className="px-1 py-3 text-center text-[13px] text-foreground-dim">
-                  일치하는 사용자가 없어요.
+                  {t("일치하는 사용자가 없어요.", "No matching users.")}
                 </p>
               ) : (
                 visible.map((p) => (
-                  <ResultRow key={p.uid} profile={p} me={me} />
+                  <ResultRow key={p.uid} profile={p} me={me} t={t} />
                 ))
               )}
             </div>
@@ -102,7 +104,15 @@ export function UserSearch({ title }: { title?: string }) {
   );
 }
 
-function ResultRow({ profile: p, me }: { profile: Profile; me: string | null }) {
+function ResultRow({
+  profile: p,
+  me,
+  t,
+}: {
+  profile: Profile;
+  me: string | null;
+  t: TranslateFn;
+}) {
   const [counts, setCounts] = useState<FollowCounts | null>(null);
 
   useEffect(() => {
@@ -148,11 +158,12 @@ function ResultRow({ profile: p, me }: { profile: Profile; me: string | null }) 
           </div>
           <div className="mt-0.5 text-[11px] text-foreground-dim truncate">
             {demo && <span>{demo} · </span>}
-            팔로워{" "}
+            {t("팔로워", "Followers")}{" "}
             <span className="text-foreground-muted tabular-nums">
               {counts?.followers ?? "—"}
             </span>
-            {"  ·  "}팔로잉{" "}
+            {"  ·  "}
+            {t("팔로잉", "Following")}{" "}
             <span className="text-foreground-muted tabular-nums">
               {counts?.following ?? "—"}
             </span>
@@ -160,7 +171,7 @@ function ResultRow({ profile: p, me }: { profile: Profile; me: string | null }) 
         </div>
       </Link>
       {me === p.uid ? (
-        <span className="shrink-0 pr-1 text-[12px] text-foreground-dim">나</span>
+        <span className="shrink-0 pr-1 text-[12px] text-foreground-dim">{t("나", "You")}</span>
       ) : (
         <FollowButton targetUid={p.uid} size="sm" />
       )}

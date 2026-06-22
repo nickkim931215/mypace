@@ -1,8 +1,11 @@
+"use client";
+
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 export function ComingSoon({
   phase,
@@ -13,6 +16,7 @@ export function ComingSoon({
   title: string;
   description: string;
 }) {
+  const t = useT();
   return (
     <>
       <SiteHeader />
@@ -29,7 +33,7 @@ export function ComingSoon({
         <Link href="/" className="inline-block mt-10">
           <Button variant="secondary" size="md">
             <ArrowLeft size={16} />
-            홈으로
+            {t("홈으로", "Home")}
           </Button>
         </Link>
       </main>

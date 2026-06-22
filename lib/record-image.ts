@@ -1,5 +1,5 @@
 import type { RecordSnapshot } from "@/lib/types";
-import { monthGrid, WEEKDAYS } from "@/lib/history";
+import { monthGrid, weekdays, formatMonthLabel, type Locale } from "@/lib/history";
 import { LEVEL_TIERS, levelColor } from "@/lib/level";
 
 // Renders a shareable workout-record card as a PNG Blob, using the MyPace
@@ -36,7 +36,9 @@ export async function renderRecordCard(
   snapshot: RecordSnapshot,
   nickname: string,
   level?: number,
+  locale: Locale = "ko",
 ): Promise<Blob> {
+  const en = locale === "en";
   // Make sure the brand font is ready so text doesn't draw in a fallback face.
   if (typeof document !== "undefined" && document.fonts?.ready) {
     try {
@@ -91,7 +93,7 @@ export async function renderRecordCard(
   ctx.fillText("MyPace", PAD + 28, 104);
   ctx.fillStyle = FG_DIM;
   ctx.font = `500 22px ${FONT}`;
-  ctx.fillText("운동 인터벌 타이머", PAD + 2, 140);
+  ctx.fillText(en ? "Workout Interval Timer" : "운동 인터벌 타이머", PAD + 2, 140);
 
   // @nickname pill, right-aligned, vertically centered with the wordmark.
   const handle = `@${nickname}`;
@@ -114,7 +116,7 @@ export async function renderRecordCard(
   // Level / 칭호 chip (tinted by level color), right-aligned under the @nickname.
   if (level && level >= 1) {
     const tier = LEVEL_TIERS[Math.min(level, LEVEL_TIERS.length) - 1];
-    const lvText = `Lv.${tier.level} · ${tier.title}`;
+    const lvText = `Lv.${tier.level} · ${en ? tier.titleEn : tier.title}`;
     ctx.font = `700 23px ${FONT}`;
     const lvW = ctx.measureText(lvText).width;
     const lpW = lvW + 36;
@@ -151,7 +153,11 @@ export async function renderRecordCard(
   ctx.textAlign = "left";
   ctx.fillStyle = ACCENT;
   ctx.font = `700 26px ${FONT}`;
-  ctx.fillText(snapshot.monthLabel, PAD, 268);
+  ctx.fillText(
+    formatMonthLabel(snapshot.year, snapshot.month, locale),
+    PAD,
+    268,
+  );
 
   ctx.fillStyle = FG;
   ctx.font = `800 120px ${FONT}`;
@@ -160,13 +166,13 @@ export async function renderRecordCard(
   const bigW = ctx.measureText(big).width;
   ctx.fillStyle = FG_MUTED;
   ctx.font = `600 46px ${FONT}`;
-  ctx.fillText("회 운동", PAD + bigW + 20, 384);
+  ctx.fillText(en ? "workouts" : "회 운동", PAD + bigW + 20, 384);
 
   // ── Inline stats bar: 연속 · 이번 주 · 누적 ────────────────────────────
   const statsY = 440;
-  drawStat(ctx, PAD + innerW * (1 / 6), statsY, `${snapshot.streak}`, "일 연속", true);
-  drawStat(ctx, PAD + innerW * (3 / 6), statsY, `${snapshot.weekCount}`, "이번 주", false);
-  drawStat(ctx, PAD + innerW * (5 / 6), statsY, `${snapshot.totalCount}`, "누적", false);
+  drawStat(ctx, PAD + innerW * (1 / 6), statsY, `${snapshot.streak}`, en ? "day streak" : "일 연속", true);
+  drawStat(ctx, PAD + innerW * (3 / 6), statsY, `${snapshot.weekCount}`, en ? "this week" : "이번 주", false);
+  drawStat(ctx, PAD + innerW * (5 / 6), statsY, `${snapshot.totalCount}`, en ? "total" : "누적", false);
   // thin separators between stats
   ctx.fillStyle = "rgba(255,255,255,0.07)";
   ctx.fillRect(PAD + innerW * (2 / 6), statsY - 6, 1, 56);
@@ -204,10 +210,11 @@ export async function renderRecordCard(
   // weekday header
   ctx.textAlign = "center";
   ctx.font = `600 24px ${FONT}`;
+  const wd = weekdays(locale);
   for (let i = 0; i < 7; i++) {
     ctx.fillStyle = i === 0 ? "rgba(239,68,68,0.7)" : FG_DIM;
     const cx = gridX + i * (cell + gap) + cell / 2;
-    ctx.fillText(WEEKDAYS[i], cx, gridY + 22);
+    ctx.fillText(wd[i], cx, gridY + 22);
   }
 
   // day cells

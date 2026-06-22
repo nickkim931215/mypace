@@ -9,6 +9,7 @@ import { formatDuration } from "@/lib/utils";
 import { useProfileName } from "@/hooks/use-profile-name";
 import { LevelName } from "@/components/community/level-name";
 import { LevelBadge } from "@/components/community/level-badge";
+import { useLocale } from "@/lib/i18n";
 
 export function PostCard({
   post,
@@ -17,6 +18,7 @@ export function PostCard({
   post: CommunityPost;
   onOpen: (id: string) => void;
 }) {
+  const { locale } = useLocale();
   const routine = post.routine;
   const totalSec = routine ? routine.totalDurationSec * routine.repeat : 0;
   const workRounds =
@@ -76,9 +78,13 @@ export function PostCard({
               {BODY_PART_LABEL[p as BodyPart] ?? p}
             </span>
           ))}
-          <span className="tabular-nums">{formatDuration(totalSec)}</span>
+          <span className="tabular-nums">{formatDuration(totalSec, locale)}</span>
           <span>·</span>
-          <span>{workRounds}라운드</span>
+          <span>
+            {locale === "en"
+              ? `${workRounds} ${workRounds === 1 ? "round" : "rounds"}`
+              : `${workRounds}라운드`}
+          </span>
         </div>
 
         {post.description && (

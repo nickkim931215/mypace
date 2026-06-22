@@ -15,12 +15,15 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { useTimerStore } from "@/store/timer-store";
 import { useProfileName } from "@/hooks/use-profile-name";
-import { buildRecordSnapshot, startOfDay } from "@/lib/history";
+import { buildRecordSnapshot, formatMonthLabel, startOfDay } from "@/lib/history";
 import { renderRecordCard } from "@/lib/record-image";
 import { getLevel } from "@/lib/level";
 import { trackEvent } from "@/lib/analytics";
+import { useT, useLocale } from "@/lib/i18n";
 
 export function RecordImageModal({ onClose }: { onClose: () => void }) {
+  const t = useT();
+  const { locale } = useLocale();
   const { user } = useAuth();
   const completions = useTimerStore((s) => s.completions);
   const nickname = useProfileName(
@@ -38,6 +41,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
     () => buildRecordSnapshot(completions, cursor.year, cursor.month),
     [completions, cursor],
   );
+  const monthLabel = formatMonthLabel(snapshot.year, snapshot.month, locale);
   // All-time level (not month-scoped) — shown as a chip on the card.
   const level = useMemo(() => getLevel(completions.length).level, [completions]);
 
@@ -54,7 +58,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
     setRendering(true);
     setError(null);
     setShared(false);
-    renderRecordCard(snapshot, nickname, level)
+    renderRecordCard(snapshot, nickname, level, locale)
       .then((b) => {
         if (!alive) return;
         url = URL.createObjectURL(b);
@@ -65,14 +69,14 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
       .catch((err) => {
         console.error("[record-image] render failed:", err);
         if (!alive) return;
-        setError("이미지를 만들지 못했어요.");
+        setError(t("이미지를 만들지 못했어요.", "Couldn't create the image."));
         setRendering(false);
       });
     return () => {
       alive = false;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [snapshot, nickname, level]);
+  }, [snapshot, nickname, level, locale, t]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -89,8 +93,11 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
     const file = new File([blob], fileName, { type: "image/png" });
     const shareData = {
       files: [file],
-      title: "MyPace 운동 기록",
-      text: `${snapshot.monthLabel} ${snapshot.monthCount}회 운동 · ${snapshot.streak}일 연속 🔥`,
+      title: t("MyPace 운동 기록", "MyPace workout record"),
+      text: t(
+        `${monthLabel} ${snapshot.monthCount}회 운동 · ${snapshot.streak}일 연속 🔥`,
+        `${monthLabel}: ${snapshot.monthCount} workouts · ${snapshot.streak}-day streak 🔥`,
+      ),
     };
     // Prefer native share sheet (KakaoTalk / Instagram / etc.) on mobile.
     if (
@@ -112,7 +119,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
     downloadBlob(blob, fileName);
     setShared(true);
     trackEvent("record_shared", { method: "download" });
-  }, [blob, fileName, snapshot]);
+  }, [blob, fileName, snapshot, monthLabel, t]);
 
   const onDownload = useCallback(() => {
     if (!blob) return;
@@ -144,7 +151,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
         <button
           type="button"
           onClick={onClose}
-          aria-label="닫기"
+          aria-label={t("닫기", "Close")}
           className="absolute right-3 top-3 z-20 h-9 w-9 rounded-full bg-surface-2 hover:bg-surface-3 flex items-center justify-center transition-colors"
         >
           <X size={16} />
@@ -155,11 +162,13 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
             Share
           </span>
           <h2 className="mt-2 font-display text-2xl font-semibold tracking-tight">
-            기록 이미지로 공유
+            {t("기록 이미지로 공유", "Share as image")}
           </h2>
           <p className="mt-1.5 text-[13px] text-foreground-muted">
-            이번 달 운동 기록을 카드 이미지로 만들어 카카오톡·인스타그램에
-            바로 공유해요.
+            {t(
+              "이번 달 운동 기록을 카드 이미지로 만들어 카카오톡·인스타그램에 바로 공유해요.",
+              "Turn this month's workout record into a card image and share it straight to KakaoTalk or Instagram.",
+            )}
           </p>
 
           {/* Month picker */}
@@ -167,17 +176,17 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               onClick={() => shiftMonth(-1)}
-              aria-label="이전 달"
+              aria-label={t("이전 달", "Previous month")}
               className="h-9 w-9 rounded-full hover:bg-surface-2 flex items-center justify-center text-foreground-muted transition-colors"
             >
               <ChevronLeft size={18} />
             </button>
-            <span className="text-[13px] font-medium">{snapshot.monthLabel}</span>
+            <span className="text-[13px] font-medium">{monthLabel}</span>
             <button
               type="button"
               onClick={() => shiftMonth(1)}
               disabled={isCurrentMonth}
-              aria-label="다음 달"
+              aria-label={t("다음 달", "Next month")}
               className="h-9 w-9 rounded-full hover:bg-surface-2 flex items-center justify-center text-foreground-muted transition-colors disabled:opacity-30"
             >
               <ChevronRight size={18} />
@@ -190,7 +199,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={imgUrl}
-                alt="운동 기록 카드 미리보기"
+                alt={t("운동 기록 카드 미리보기", "Workout record card preview")}
                 className="w-full h-full object-contain"
               />
             )}
@@ -217,7 +226,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
               disabled={rendering || !blob}
             >
               {shared ? <Check size={16} /> : <Share2 size={16} />}
-              {shared ? "공유 완료" : "공유하기"}
+              {shared ? t("공유 완료", "Shared") : t("공유하기", "Share")}
             </Button>
             <Button
               type="button"
@@ -227,7 +236,7 @@ export function RecordImageModal({ onClose }: { onClose: () => void }) {
               disabled={rendering || !blob}
             >
               <Download size={15} />
-              이미지 저장
+              {t("이미지 저장", "Save image")}
             </Button>
           </div>
         </div>

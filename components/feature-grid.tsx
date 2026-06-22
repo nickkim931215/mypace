@@ -3,35 +3,37 @@
 import { motion } from "framer-motion";
 import { Timer, Sparkles, Users, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const features = [
-  {
-    icon: Timer,
-    title: "인터벌 타이머",
-    desc: "운동·휴식 라운드를 자유롭게 조합.",
-    accent: "text-accent",
-  },
-  {
-    icon: Sparkles,
-    title: "AI 부위별 추천",
-    desc: "시간·강도만 알려주면 루틴을 통째로.",
-    accent: "text-accent",
-  },
-  {
-    icon: Users,
-    title: "루틴 커뮤니티",
-    desc: "내 루틴·영상을 공유하고 한 탭으로 시작.",
-    accent: "text-rest",
-  },
-  {
-    icon: Megaphone,
-    title: "트레이너 광고",
-    desc: "유튜브 영상을 배너에. 30·60·90일 노출.",
-    accent: "text-foreground",
-  },
-] as const;
+import { useT } from "@/lib/i18n";
 
 export function FeatureGrid() {
+  const t = useT();
+  const features = [
+    {
+      icon: Timer,
+      title: t("인터벌 타이머", "Interval Timer"),
+      desc: t("운동·휴식 라운드를 자유롭게 조합.", "Mix work and rest rounds however you like."),
+      accent: "text-accent",
+    },
+    {
+      icon: Sparkles,
+      title: t("AI 부위별 추천", "AI Muscle-Group Picks"),
+      desc: t("시간·강도만 알려주면 루틴을 통째로.", "Just give us time and intensity — we'll build the whole routine."),
+      accent: "text-accent",
+    },
+    {
+      icon: Users,
+      title: t("루틴 커뮤니티", "Routine Community"),
+      desc: t("내 루틴·영상을 공유하고 한 탭으로 시작.", "Share your routines and videos, start with one tap."),
+      accent: "text-rest",
+    },
+    {
+      icon: Megaphone,
+      title: t("트레이너 광고", "Trainer Ads"),
+      desc: t("유튜브 영상을 배너에. 30·60·90일 노출.", "Put your YouTube videos on a banner. 30/60/90-day runs."),
+      accent: "text-foreground",
+    },
+  ] as const;
+
   return (
     <section className="mx-auto max-w-5xl px-5 sm:px-8 py-9 sm:py-12 border-t border-border-subtle">
       <div className="flex flex-col items-center text-center mb-5 sm:mb-6">
@@ -39,7 +41,7 @@ export function FeatureGrid() {
           What's inside
         </span>
         <h2 className="mt-1.5 font-display text-xl sm:text-2xl tracking-[-0.02em] font-semibold">
-          하나의 앱, 운동의 모든 박자
+          {t("하나의 앱, 운동의 모든 박자", "One app, every beat of your workout")}
         </h2>
       </div>
 

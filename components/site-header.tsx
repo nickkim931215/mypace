@@ -6,19 +6,20 @@ import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/user-menu";
 import { NotificationBell } from "@/components/community/notification-bell";
+import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-
-const NAV = [
-  { href: "/timer", label: "타이머", short: "타이머" },
-  { href: "/discover", label: "AI 추천", short: "AI추천" },
-  { href: "/community", label: "커뮤니티", short: "커뮤니티" },
-  { href: "/history", label: "내 기록", short: "내기록" },
-  { href: "/profile", label: "프로필", short: "프로필" },
-  { href: "/advertise", label: "광고문의", short: "광고문의" },
-];
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const t = useT();
+  const NAV = [
+    { href: "/timer", label: t("타이머", "Timer"), short: t("타이머", "Timer") },
+    { href: "/discover", label: t("AI 추천", "AI Picks"), short: t("AI추천", "AI") },
+    { href: "/community", label: t("커뮤니티", "Community"), short: t("커뮤니티", "Community") },
+    { href: "/history", label: t("내 기록", "Records"), short: t("내기록", "Records") },
+    { href: "/profile", label: t("프로필", "Profile"), short: t("프로필", "Profile") },
+    { href: "/advertise", label: t("광고문의", "Advertise"), short: t("광고문의", "Ads") },
+  ];
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
 
@@ -47,7 +48,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           <Link href="/timer" className="hidden sm:block">
             <Button size="sm" variant="primary">
-              시작하기
+              {t("시작하기", "Get started")}
             </Button>
           </Link>
           <NotificationBell />

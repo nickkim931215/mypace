@@ -8,6 +8,7 @@ import { formatClock } from "@/lib/utils";
 import type { Routine } from "@/lib/types";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 interface Props {
   routine: Routine;
@@ -21,6 +22,7 @@ export function RoutineHeader({ routine }: Props) {
   const deleteRoutine = useTimerStore((s) => s.deleteRoutine);
   const renameRoutine = useTimerStore((s) => s.renameRoutine);
   const setRepeat = useTimerStore((s) => s.setRepeat);
+  const t = useT();
 
   const [open, setOpen] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
@@ -31,7 +33,7 @@ export function RoutineHeader({ routine }: Props) {
   // Routines auto-persist (localStorage + cloud sync), but an explicit "저장"
   // gives clear confirmation and bumps updatedAt so a sync push is triggered.
   const handleSave = () => {
-    renameRoutine(routine.id, routine.name.trim() || "새 루틴");
+    renameRoutine(routine.id, routine.name.trim() || t("새 루틴", "New routine"));
     setJustSaved(true);
     setTimeout(() => setJustSaved(false), 1600);
   };
@@ -46,7 +48,7 @@ export function RoutineHeader({ routine }: Props) {
             onClick={() => setOpen((o) => !o)}
             className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-surface-1 border border-border-subtle hover:border-border-strong transition-colors"
           >
-            <span className="text-[13px] text-foreground-muted">내 루틴</span>
+            <span className="text-[13px] text-foreground-muted">{t("내 루틴", "My routines")}</span>
             <span className="text-[13px] font-medium text-foreground truncate max-w-[180px]">
               {routine.name}
             </span>
@@ -90,7 +92,7 @@ export function RoutineHeader({ routine }: Props) {
                   }}
                   className="flex-1 text-[12px] text-foreground-muted hover:text-foreground hover:bg-surface-2 rounded-lg px-2 py-2 inline-flex items-center justify-center gap-1.5"
                 >
-                  <Plus size={13} /> 새 루틴
+                  <Plus size={13} /> {t("새 루틴", "New routine")}
                 </button>
                 <button
                   onClick={() => {
@@ -99,18 +101,25 @@ export function RoutineHeader({ routine }: Props) {
                   }}
                   className="flex-1 text-[12px] text-foreground-muted hover:text-foreground hover:bg-surface-2 rounded-lg px-2 py-2 inline-flex items-center justify-center gap-1.5"
                 >
-                  <Copy size={13} /> 복제
+                  <Copy size={13} /> {t("복제", "Duplicate")}
                 </button>
                 {routines.length > 1 && (
                   <button
                     onClick={() => {
-                      if (confirm(`"${routine.name}"을(를) 삭제할까요?`)) {
+                      if (
+                        confirm(
+                          t(
+                            `"${routine.name}"을(를) 삭제할까요?`,
+                            `Delete "${routine.name}"?`,
+                          ),
+                        )
+                      ) {
                         deleteRoutine(routine.id);
                         setOpen(false);
                       }
                     }}
                     className="text-[12px] text-foreground-muted hover:text-danger hover:bg-danger/10 rounded-lg px-2 py-2 inline-flex items-center justify-center"
-                    aria-label="삭제"
+                    aria-label={t("삭제", "Delete")}
                   >
                     <Trash2 size={13} />
                   </button>
@@ -128,16 +137,16 @@ export function RoutineHeader({ routine }: Props) {
           >
             {justSaved ? (
               <>
-                <Check size={15} /> 저장됨
+                <Check size={15} /> {t("저장됨", "Saved")}
               </>
             ) : (
-              "저장"
+              t("저장", "Save")
             )}
           </Button>
           <Link href={`/timer/run`}>
             <Button variant="primary" size="md">
               <Play size={15} fill="currentColor" />
-              시작
+              {t("시작", "Start")}
             </Button>
           </Link>
         </div>
@@ -149,31 +158,31 @@ export function RoutineHeader({ routine }: Props) {
           value={routine.name}
           onChange={(e) => renameRoutine(routine.id, e.target.value)}
           className="bg-transparent font-display text-[32px] sm:text-[40px] tracking-[-0.03em] font-semibold text-foreground focus:outline-none placeholder:text-foreground-dim"
-          placeholder="루틴 이름"
+          placeholder={t("루틴 이름", "Routine name")}
         />
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-foreground-muted">
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-foreground-dim">총 시간</span>
+            <span className="text-foreground-dim">{t("총 시간", "Total time")}</span>
             <span className="tabular text-foreground font-medium">
               {formatClock(routine.totalDurationSec * routine.repeat)}
             </span>
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="text-foreground-dim">라운드</span>
+            <span className="text-foreground-dim">{t("라운드", "Rounds")}</span>
             <span className="tabular text-foreground font-medium">
-              {routine.rounds.length}개
+              {routine.rounds.length}{t("개", "")}
             </span>
             <span className="text-foreground-dim">
-              ({work} 운동 · {rest} 휴식)
+              ({work} {t("운동", "work")} · {rest} {t("휴식", "rest")})
             </span>
           </span>
           <span className="inline-flex items-center gap-2">
-            <span className="text-foreground-dim">반복</span>
+            <span className="text-foreground-dim">{t("반복", "Repeat")}</span>
             <div className="inline-flex items-center gap-1">
               <button
                 onClick={() => setRepeat(routine.id, routine.repeat - 1)}
                 className="h-6 w-6 rounded-full bg-surface-2 hover:bg-surface-3 text-foreground-muted text-xs"
-                aria-label="반복 감소"
+                aria-label={t("반복 감소", "Decrease repeat")}
               >
                 −
               </button>
@@ -183,7 +192,7 @@ export function RoutineHeader({ routine }: Props) {
               <button
                 onClick={() => setRepeat(routine.id, routine.repeat + 1)}
                 className="h-6 w-6 rounded-full bg-surface-2 hover:bg-surface-3 text-foreground-muted text-xs"
-                aria-label="반복 증가"
+                aria-label={t("반복 증가", "Increase repeat")}
               >
                 +
               </button>
@@ -191,7 +200,7 @@ export function RoutineHeader({ routine }: Props) {
           </span>
           {routine.rating ? (
             <span className="inline-flex items-center gap-1.5">
-              <span className="text-foreground-dim">평가</span>
+              <span className="text-foreground-dim">{t("평가", "Rating")}</span>
               <span className="inline-flex items-center gap-0.5">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <Star

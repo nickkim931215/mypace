@@ -43,8 +43,21 @@ export const AGE_RANGE_LABEL: Record<AgeRange, string> = {
   "60s": "60대+",
   "70s": "70대",
 };
+export const AGE_RANGE_LABEL_EN: Record<AgeRange, string> = {
+  "10s": "10s",
+  "20s": "20s",
+  "30s": "30s",
+  "40s": "40s",
+  "50s": "50s",
+  "60s": "60s+",
+  "70s": "70s",
+};
 export const GENDERS: Gender[] = ["male", "female"];
 export const GENDER_LABEL: Record<Gender, string> = { male: "남", female: "여" };
+export const GENDER_LABEL_EN: Record<Gender, string> = {
+  male: "Male",
+  female: "Female",
+};
 
 export interface Profile {
   uid: string;
@@ -77,10 +90,16 @@ export class NicknameTakenError extends Error {
   }
 }
 
+// Stable reason codes so the UI can show a localized message regardless of
+// which language is active (the default `message` stays Korean as a fallback).
+export type NicknameInvalidCode = "too_short" | "too_long" | "bad_chars";
+
 export class NicknameInvalidError extends Error {
-  constructor(message: string) {
+  code: NicknameInvalidCode;
+  constructor(message: string, code: NicknameInvalidCode) {
     super(message);
     this.name = "NicknameInvalidError";
+    this.code = code;
   }
 }
 
@@ -99,14 +118,21 @@ export function nicknameKey(nickname: string): string {
 export function assertValidNickname(nickname: string): void {
   const clean = cleanNickname(nickname);
   if (clean.length < NICKNAME_MIN) {
-    throw new NicknameInvalidError(`닉네임은 ${NICKNAME_MIN}자 이상이어야 해요.`);
+    throw new NicknameInvalidError(
+      `닉네임은 ${NICKNAME_MIN}자 이상이어야 해요.`,
+      "too_short",
+    );
   }
   if (clean.length > NICKNAME_MAX) {
-    throw new NicknameInvalidError(`닉네임은 ${NICKNAME_MAX}자 이하여야 해요.`);
+    throw new NicknameInvalidError(
+      `닉네임은 ${NICKNAME_MAX}자 이하여야 해요.`,
+      "too_long",
+    );
   }
   if (!NICKNAME_RE.test(clean)) {
     throw new NicknameInvalidError(
       "한글·영문·숫자와 _ . - 만 사용할 수 있어요.",
+      "bad_chars",
     );
   }
 }

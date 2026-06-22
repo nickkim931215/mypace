@@ -23,9 +23,9 @@ import { RecordImageModal } from "@/components/history/record-image-modal";
 import { LevelCard } from "@/components/history/level-card";
 import { LevelLadder } from "@/components/history/level-ladder";
 import { formatDuration, cn } from "@/lib/utils";
+import { useT, useLocale } from "@/lib/i18n";
+import { formatMonthLabel, weekdays } from "@/lib/history";
 import type { WorkoutCompletion } from "@/lib/types";
-
-const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 function pad(n: number): string {
   return n < 10 ? `0${n}` : `${n}`;
@@ -56,6 +56,8 @@ function computeStreak(days: Set<string>): number {
 }
 
 export function HistoryView() {
+  const t = useT();
+  const { locale } = useLocale();
   const completions = useTimerStore((s) => s.completions);
   const { configured, state } = useAuth();
 
@@ -126,7 +128,7 @@ export function HistoryView() {
   }, [cursor]);
 
   const todayKey = dateKey(today);
-  const monthLabel = `${cursor.year}년 ${cursor.month + 1}월`;
+  const monthLabel = formatMonthLabel(cursor.year, cursor.month, locale);
   const isCurrentMonth =
     cursor.year === today.getFullYear() && cursor.month === today.getMonth();
 
@@ -150,7 +152,10 @@ export function HistoryView() {
       {configured && state.status === "signedOut" && (
         <div className="card-premium px-5 py-3.5 flex items-center gap-2.5 text-[13px] text-foreground-muted">
           <CloudOff size={15} className="text-accent shrink-0" />
-          로그인하면 기록이 기기 간에 동기화돼요.
+          {t(
+            "로그인하면 기록이 기기 간에 동기화돼요.",
+            "Sign in to sync your records across devices.",
+          )}
         </div>
       )}
 
@@ -158,19 +163,19 @@ export function HistoryView() {
       <div className="grid grid-cols-3 gap-3">
         <Stat
           icon={<Flame size={16} className="text-accent" />}
-          value={`${streak}일`}
-          label="연속 기록"
+          value={t(`${streak}일`, `${streak}d`)}
+          label={t("연속 기록", "Streak")}
           highlight={streak > 0}
         />
         <Stat
           icon={<CalendarDays size={16} className="text-accent" />}
-          value={`${weekCount}회`}
-          label="이번 주"
+          value={t(`${weekCount}회`, `${weekCount}x`)}
+          label={t("이번 주", "This week")}
         />
         <Stat
           icon={<Dumbbell size={16} className="text-accent" />}
-          value={`${completions.length}회`}
-          label="누적 완료"
+          value={t(`${completions.length}회`, `${completions.length}x`)}
+          label={t("누적 완료", "Total")}
         />
       </div>
 
@@ -186,7 +191,7 @@ export function HistoryView() {
             className="self-stretch sm:self-auto"
           >
             <Share2 size={15} />
-            기록 이미지로 공유
+            {t("기록 이미지로 공유", "Share as image")}
           </Button>
           {signedIn && (
             <Button
@@ -196,7 +201,7 @@ export function HistoryView() {
               className="self-stretch sm:self-auto"
             >
               <Trophy size={15} />
-              커뮤니티에 자랑하기
+              {t("커뮤니티에 자랑하기", "Show off in community")}
             </Button>
           )}
         </div>
@@ -208,7 +213,7 @@ export function HistoryView() {
           <button
             type="button"
             onClick={() => shiftMonth(-1)}
-            aria-label="이전 달"
+            aria-label={t("이전 달", "Previous month")}
             className="h-9 w-9 rounded-full hover:bg-surface-2 flex items-center justify-center text-foreground-muted transition-colors"
           >
             <ChevronLeft size={18} />
@@ -218,14 +223,14 @@ export function HistoryView() {
               {monthLabel}
             </p>
             <p className="text-[12px] text-foreground-dim">
-              이 달 {monthCount}회 운동
+              {t(`이 달 ${monthCount}회 운동`, `${monthCount} workouts this month`)}
             </p>
           </div>
           <button
             type="button"
             onClick={() => shiftMonth(1)}
             disabled={isCurrentMonth}
-            aria-label="다음 달"
+            aria-label={t("다음 달", "Next month")}
             className="h-9 w-9 rounded-full hover:bg-surface-2 flex items-center justify-center text-foreground-muted transition-colors disabled:opacity-30"
           >
             <ChevronRight size={18} />
@@ -233,7 +238,7 @@ export function HistoryView() {
         </div>
 
         <div className="grid grid-cols-7 gap-1 mb-1.5">
-          {WEEKDAYS.map((w, i) => (
+          {weekdays(locale).map((w, i) => (
             <div
               key={w}
               className={cn(
@@ -272,7 +277,10 @@ export function HistoryView() {
                 type="button"
                 onClick={() => setSelectedDay(cell.key)}
                 className={cn(className, "hover:bg-accent/25 cursor-pointer")}
-                title={`${count}회 완료 · 눌러서 보기`}
+                title={t(
+                  `${count}회 완료 · 눌러서 보기`,
+                  `${count} done · tap to view`,
+                )}
               >
                 {cell.day}
                 {/* One dot per workout that day (capped at 4 to fit the cell;
@@ -299,22 +307,24 @@ export function HistoryView() {
         {empty ? (
           <>
             <h2 className="text-[11px] uppercase tracking-[0.18em] text-foreground-dim mb-3">
-              최근 완료
+              {t("최근 완료", "Recent")}
             </h2>
             <div className="card-premium px-8 py-14 flex flex-col items-center text-center">
               <div className="h-14 w-14 rounded-full bg-accent/15 text-accent flex items-center justify-center">
                 <Flame size={24} />
               </div>
               <h3 className="mt-5 font-display text-xl font-semibold tracking-tight">
-                첫 기록을 남겨보세요
+                {t("첫 기록을 남겨보세요", "Log your first workout")}
               </h3>
               <p className="mt-2 text-[13px] text-foreground-muted max-w-xs leading-relaxed">
-                루틴을 끝까지 완료하면 여기에 날짜별로 쌓여요. 연속 기록을
-                이어가 보세요.
+                {t(
+                  "루틴을 끝까지 완료하면 여기에 날짜별로 쌓여요. 연속 기록을 이어가 보세요.",
+                  "Finish a routine and it gets logged here by date. Keep your streak going.",
+                )}
               </p>
               <Link href="/timer" className="mt-6">
                 <Button variant="primary" size="md">
-                  운동 시작하기
+                  {t("운동 시작하기", "Start a workout")}
                 </Button>
               </Link>
             </div>
@@ -332,12 +342,12 @@ export function HistoryView() {
                   <Dumbbell size={15} />
                 </span>
                 <span className="text-[14px] font-medium">
-                  최근 완료 운동 리스트
+                  {t("최근 완료 운동 리스트", "Recent workouts")}
                 </span>
               </span>
               <span className="flex items-center gap-2 text-foreground-dim shrink-0">
                 <span className="text-[12px] tabular-nums">
-                  {completions.length}회
+                  {t(`${completions.length}회`, `${completions.length}x`)}
                 </span>
                 <ChevronDown
                   size={18}
@@ -380,6 +390,8 @@ function DayRecordsModal({
   dayKey: string;
   onClose: () => void;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   const completions = useTimerStore((s) => s.completions);
   const deleteCompletion = useTimerStore((s) => s.deleteCompletion);
 
@@ -405,12 +417,15 @@ function DayRecordsModal({
   }, [onClose]);
 
   const [y, m, d] = dayKey.split("-").map(Number);
-  const heading = new Date(y, m - 1, d).toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    weekday: "short",
-  });
+  const heading = new Date(y, m - 1, d).toLocaleDateString(
+    locale === "en" ? "en-US" : "ko-KR",
+    {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      weekday: "short",
+    },
+  );
 
   return (
     <div
@@ -426,7 +441,7 @@ function DayRecordsModal({
         <button
           type="button"
           onClick={onClose}
-          aria-label="닫기"
+          aria-label={t("닫기", "Close")}
           className="absolute right-3 top-3 z-20 h-9 w-9 rounded-full bg-surface-2 hover:bg-surface-3 flex items-center justify-center transition-colors"
         >
           <X size={16} />
@@ -440,7 +455,10 @@ function DayRecordsModal({
             {heading}
           </h2>
           <p className="mt-1 text-[13px] text-foreground-muted">
-            {rows.length}회 완료 · 실수로 기록된 운동은 삭제할 수 있어요.
+            {t(
+              `${rows.length}회 완료 · 실수로 기록된 운동은 삭제할 수 있어요.`,
+              `${rows.length} done · you can delete a workout logged by mistake.`,
+            )}
           </p>
 
           <ul className="mt-5 flex flex-col gap-2">
@@ -465,9 +483,11 @@ function DayRow({
   completion: WorkoutCompletion;
   onDelete: () => void;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   const [confirming, setConfirming] = useState(false);
   const timeLabel = new Date(completion.completedAt).toLocaleTimeString(
-    "ko-KR",
+    locale === "en" ? "en-US" : "ko-KR",
     { hour: "2-digit", minute: "2-digit" },
   );
 
@@ -481,7 +501,7 @@ function DayRow({
           {completion.routineName}
         </p>
         <p className="text-[12px] text-foreground-dim tabular-nums">
-          {timeLabel} · {formatDuration(completion.durationSec)}
+          {timeLabel} · {formatDuration(completion.durationSec, locale)}
         </p>
       </div>
 
@@ -492,21 +512,21 @@ function DayRow({
             onClick={onDelete}
             className="h-8 px-3 rounded-full text-[12px] font-medium bg-danger text-white hover:brightness-110 transition-all"
           >
-            삭제
+            {t("삭제", "Delete")}
           </button>
           <button
             type="button"
             onClick={() => setConfirming(false)}
             className="h-8 px-3 rounded-full text-[12px] font-medium bg-surface-2 text-foreground-muted hover:bg-surface-3 transition-colors"
           >
-            취소
+            {t("취소", "Cancel")}
           </button>
         </div>
       ) : (
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          aria-label="이 기록 삭제"
+          aria-label={t("이 기록 삭제", "Delete this record")}
           className="h-8 w-8 rounded-full text-foreground-dim hover:text-danger hover:bg-danger/10 flex items-center justify-center transition-colors shrink-0"
         >
           <Trash2 size={15} />
@@ -544,13 +564,15 @@ function Stat({
 }
 
 function RecentRow({ completion }: { completion: WorkoutCompletion }) {
+  const { locale } = useLocale();
+  const dateLocale = locale === "en" ? "en-US" : "ko-KR";
   const d = new Date(completion.completedAt);
-  const dateLabel = d.toLocaleDateString("ko-KR", {
+  const dateLabel = d.toLocaleDateString(dateLocale, {
     month: "long",
     day: "numeric",
     weekday: "short",
   });
-  const timeLabel = d.toLocaleTimeString("ko-KR", {
+  const timeLabel = d.toLocaleTimeString(dateLocale, {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -568,7 +590,7 @@ function RecentRow({ completion }: { completion: WorkoutCompletion }) {
         </p>
       </div>
       <span className="text-[12px] text-foreground-muted tabular-nums shrink-0">
-        {formatDuration(completion.durationSec)}
+        {formatDuration(completion.durationSec, locale)}
       </span>
     </li>
   );

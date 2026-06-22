@@ -6,6 +6,7 @@ import { useTimerStore } from "@/store/timer-store";
 import { useSyncStore } from "@/store/sync-store";
 import { getLevel } from "@/lib/level";
 import { syncProfileLevel } from "@/lib/profile";
+import { useT } from "@/lib/i18n";
 import {
   canPush,
   maxUpdatedAt,
@@ -19,6 +20,7 @@ const PUSH_DEBOUNCE_MS = 700;
 
 export function SyncBridge() {
   const { user, configured } = useAuth();
+  const t = useT();
   const applyingRemoteRef = useRef(false);
   const lastPushedAtRef = useRef(0);
   const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -87,7 +89,7 @@ export function SyncBridge() {
           console.error("[sync] push failed:", err);
           useSyncStore
             .getState()
-            .setStatus("error", "동기화에 실패했습니다.");
+            .setStatus("error", t("동기화에 실패했습니다.", "Sync failed."));
         }
       }, PUSH_DEBOUNCE_MS);
     }
@@ -165,7 +167,7 @@ export function SyncBridge() {
       () => {
         useSyncStore
           .getState()
-          .setStatus("error", "Firestore에 연결할 수 없습니다.");
+          .setStatus("error", t("Firestore에 연결할 수 없습니다.", "Couldn't connect to Firestore."));
       },
     );
 
@@ -187,7 +189,7 @@ export function SyncBridge() {
       if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
       useSyncStore.getState().setStatus("idle");
     };
-  }, [user, configured]);
+  }, [user, configured, t]);
 
   // Mirror the user's gamified level onto their PUBLIC profile whenever their
   // workout count crosses a tier boundary, so it can show next to their

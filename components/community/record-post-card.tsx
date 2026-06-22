@@ -5,6 +5,8 @@ import type { CommunityPost } from "@/lib/types";
 import { useProfileName } from "@/hooks/use-profile-name";
 import { LevelName } from "@/components/community/level-name";
 import { LevelBadge } from "@/components/community/level-badge";
+import { useT, useLocale } from "@/lib/i18n";
+import { formatMonthLabel } from "@/lib/history";
 
 export function RecordPostCard({
   post,
@@ -13,6 +15,8 @@ export function RecordPostCard({
   post: CommunityPost;
   onOpen: (id: string) => void;
 }) {
+  const t = useT();
+  const { locale } = useLocale();
   const record = post.record;
   const authorName = useProfileName(post.authorId, post.authorName);
   if (!record) return null;
@@ -29,7 +33,7 @@ export function RecordPostCard({
         <span className="font-display text-[17px] font-semibold tracking-tight tabular-nums leading-none mt-1">
           {record.streak}
         </span>
-        <span className="text-[9px] text-accent/80 mt-0.5">연속일</span>
+        <span className="text-[9px] text-accent/80 mt-0.5">{t("연속일", "day streak")}</span>
       </div>
 
       {/* Summary */}
@@ -46,7 +50,7 @@ export function RecordPostCard({
         <div className="flex items-center gap-1.5">
           <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-accent/12 text-accent text-[10px] font-medium shrink-0">
             <Trophy size={10} />
-            기록
+            {t("기록", "Record")}
           </span>
           <h3 className="text-[14px] sm:text-[15px] font-semibold tracking-tight truncate">
             {post.title}
@@ -54,11 +58,20 @@ export function RecordPostCard({
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-foreground-dim">
-          <span className="tabular-nums">{record.monthLabel}</span>
+          <span className="tabular-nums">
+            {formatMonthLabel(record.year, record.month, locale)}
+          </span>
           <span>·</span>
-          <span className="tabular-nums">이번 주 {record.weekCount}회</span>
+          <span className="tabular-nums">
+            {t(
+              `이번 주 ${record.weekCount}회`,
+              `${record.weekCount} this week`,
+            )}
+          </span>
           <span>·</span>
-          <span className="tabular-nums">누적 {record.totalCount}회</span>
+          <span className="tabular-nums">
+            {t(`누적 ${record.totalCount}회`, `${record.totalCount} total`)}
+          </span>
         </div>
 
         {post.description && (
