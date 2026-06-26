@@ -21,9 +21,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MyPace — Rhythm-Driven Workout Timer",
+  title: "MyPace — Record & Share Your Workout Routines",
   description:
-    "나만의 페이스로. 인터벌 타이머 · 메트로놈 · AI 추천 운동 · 커뮤니티.",
+    "나만의 운동 루틴, 기록하고 공유하다. 인터벌 타이머 · 메트로놈 · AI 추천 운동 · 커뮤니티.",
   applicationName: "MyPace",
   appleWebApp: {
     capable: true,

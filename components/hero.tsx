@@ -40,14 +40,14 @@ export function Hero() {
         >
           <span className="inline-flex items-center gap-2 rounded-full border border-border-subtle bg-surface-1/60 backdrop-blur-sm px-3 h-8 text-[12px] text-foreground-muted">
             <Sparkles size={12} className="text-accent" />
-            Rhythm-driven workouts. Built for your pace.
+            Record &amp; share your own workout routines.
           </span>
 
           <h1 className="mt-7 font-display text-[clamp(2.1rem,8.5vw,4.5rem)] leading-[1.05] sm:leading-[0.95] tracking-[-0.04em] font-semibold">
-            {t("나만의 페이스로,", "At your own pace,")}
+            {t("나만의 운동 루틴,", "Your own workout routine,")}
             <br />
-            <span className="text-accent">{t("리듬에 맞춰", "in rhythm")}</span>{" "}
-            {t("운동하다", "work out")}
+            <span className="text-accent">{t("기록하고", "record")}</span>{" "}
+            {t("공유하다", "& share")}
           </h1>
 
           <p className="mt-6 max-w-xl text-balance text-[15px] sm:text-lg text-foreground-muted leading-relaxed">

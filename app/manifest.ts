@@ -3,10 +3,10 @@ import type { MetadataRoute } from "next";
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
-    name: "MyPace — 나만의 페이스 운동 타이머",
+    name: "MyPace — 나만의 운동 루틴, 기록하고 공유하다",
     short_name: "MyPace",
     description:
-      "인터벌 타이머 · 메트로놈 · AI 추천 운동 · 커뮤니티. 나만의 페이스로 운동하세요.",
+      "인터벌 타이머 · 메트로놈 · AI 추천 운동 · 커뮤니티. 나만의 운동 루틴을 기록하고 공유하세요.",
     start_url: "/",
     scope: "/",
     display: "standalone",
