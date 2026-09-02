@@ -9,6 +9,7 @@ import {
   Play,
   SkipBack,
   SkipForward,
+  Share2,
   Star,
   X,
   Volume2,
@@ -19,6 +20,7 @@ import { useTimerEngine } from "@/hooks/use-timer-engine";
 import { audio } from "@/lib/audio";
 import { ProgressRing } from "./progress-ring";
 import { AudioPanel } from "./audio-panel";
+import { CompletionShareModal } from "./completion-share-modal";
 import { useWorkoutAudio } from "@/hooks/use-workout-audio";
 import { formatClock, formatDuration, cn } from "@/lib/utils";
 import { trackEvent } from "@/lib/analytics";
@@ -417,6 +419,9 @@ function FinishedScreen({
     (s) => s.routines.find((r) => r.id === routine.id)?.rating,
   );
   const [hovered, setHovered] = useState(0);
+  const [shareOpen, setShareOpen] = useState(false);
+  // Freeze the finish timestamp so the shared card shows a stable date.
+  const [finishedAt] = useState(() => Date.now());
 
   const handleRate = (n: number) => {
     rateRoutine(routine.id, n);
@@ -491,10 +496,18 @@ function FinishedScreen({
         </span>
       </div>
 
-      <div className="mt-9 flex items-center gap-3 shrink-0">
+      <button
+        onClick={() => setShareOpen(true)}
+        className="mt-9 h-12 px-6 rounded-full bg-accent text-black font-medium flex items-center gap-2 shrink-0 active:scale-95 transition-transform"
+      >
+        <Share2 size={16} />
+        {t("결과 이미지로 공유", "Share result image")}
+      </button>
+
+      <div className="mt-4 flex items-center gap-3 shrink-0">
         <button
           onClick={onRestart}
-          className="h-12 px-6 rounded-full bg-accent text-black font-medium"
+          className="h-12 px-6 rounded-full bg-surface-1 border border-border-subtle text-foreground font-medium"
         >
           {t("한 번 더", "Once more")}
         </button>
@@ -513,6 +526,19 @@ function FinishedScreen({
         {t("내 기록 보기 →", "View my history →")}
       </Link>
       </div>
+
+      {shareOpen && (
+        <CompletionShareModal
+          data={{
+            routineName: routine.name,
+            totalDurationSec: routine.totalDurationSec * routine.repeat,
+            rounds: routine.rounds.length,
+            sets: routine.repeat,
+            dateMs: finishedAt,
+          }}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
     </div>
   );
 }

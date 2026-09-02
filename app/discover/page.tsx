@@ -58,7 +58,9 @@ export default function DiscoverPage() {
 
   const canGenerate = bodyPart !== null;
 
-  const generate = async () => {
+  // Core request — takes an explicit intensity so difficulty nudges don't race
+  // React's async setState (which would otherwise send the stale value).
+  const requestRecommend = async (nextIntensity: Intensity) => {
     if (!bodyPart) return;
     setStatus("loading");
     setError(null);
@@ -69,7 +71,7 @@ export default function DiscoverPage() {
         body: JSON.stringify({
           bodyPart,
           minutes,
-          intensity,
+          intensity: nextIntensity,
           equipment,
           locale,
         }),
@@ -81,7 +83,7 @@ export default function DiscoverPage() {
       setStatus("ready");
       trackEvent("recommend_requested", {
         bodyPart,
-        intensity,
+        intensity: nextIntensity,
         minutes,
         source: data.source,
       });
@@ -89,6 +91,19 @@ export default function DiscoverPage() {
       setError(e instanceof Error ? e.message : t("AI 호출 실패", "AI request failed"));
       setStatus("error");
     }
+  };
+
+  const generate = () => requestRecommend(intensity);
+
+  // Nudge difficulty one step and re-generate right away.
+  const INTENSITY_ORDER: Intensity[] = ["easy", "medium", "hard"];
+  const adjustIntensity = (dir: -1 | 1) => {
+    if (!bodyPart) return;
+    const idx = INTENSITY_ORDER.indexOf(intensity);
+    const next = INTENSITY_ORDER[Math.min(2, Math.max(0, idx + dir))];
+    if (next === intensity) return;
+    setIntensity(next);
+    void requestRecommend(next);
   };
 
   const todayStamp = () => {
@@ -187,9 +202,12 @@ export default function DiscoverPage() {
           {status === "ready" && result && (
             <RecommendationResult
               result={result}
+              intensity={intensity}
               onSaveAndStart={() => saveToLibrary(true)}
               onSaveOnly={() => saveToLibrary(false)}
               onRegenerate={generate}
+              onEasier={() => adjustIntensity(-1)}
+              onHarder={() => adjustIntensity(1)}
             />
           )}
         </section>

@@ -8,24 +8,32 @@ import {
   RotateCcw,
   FlaskConical,
   GraduationCap,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatClock, youtubeLearnUrl } from "@/lib/utils";
-import type { RecommendResult } from "@/lib/ai-recommend";
+import type { Intensity, RecommendResult } from "@/lib/ai-recommend";
 import { useT, useLocale } from "@/lib/i18n";
 
 interface Props {
   result: RecommendResult;
+  intensity: Intensity;
   onSaveAndStart: () => void;
   onSaveOnly: () => void;
   onRegenerate: () => void;
+  onEasier: () => void;
+  onHarder: () => void;
 }
 
 export function RecommendationResult({
   result,
+  intensity,
   onSaveAndStart,
   onSaveOnly,
   onRegenerate,
+  onEasier,
+  onHarder,
 }: Props) {
   const t = useT();
   const { locale } = useLocale();
@@ -146,7 +154,32 @@ export function RecommendationResult({
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-2 pt-1">
+      {/* Difficulty nudge — re-generates one step easier / harder. */}
+      <div className="flex items-center gap-2 pt-1">
+        <span className="text-[11px] uppercase tracking-[0.16em] text-foreground-dim shrink-0">
+          {t("난이도 조정", "Adjust")}
+        </span>
+        <div className="flex-1 flex gap-2">
+          <button
+            onClick={onEasier}
+            disabled={intensity === "easy"}
+            className="flex-1 h-9 rounded-full bg-surface-2 text-foreground-muted hover:text-foreground hover:bg-surface-3 disabled:opacity-40 disabled:hover:bg-surface-2 text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <TrendingDown size={14} />
+            {t("더 쉽게", "Easier")}
+          </button>
+          <button
+            onClick={onHarder}
+            disabled={intensity === "hard"}
+            className="flex-1 h-9 rounded-full bg-surface-2 text-foreground-muted hover:text-foreground hover:bg-surface-3 disabled:opacity-40 disabled:hover:bg-surface-2 text-[12px] font-medium flex items-center justify-center gap-1.5 transition-colors"
+          >
+            <TrendingUp size={14} />
+            {t("더 어렵게", "Harder")}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-2">
         <Button variant="primary" size="md" onClick={onSaveAndStart} className="flex-1">
           <Play size={15} fill="currentColor" />
           {t("저장하고 바로 시작", "Save and start")}
